@@ -255,7 +255,7 @@ struct MenuBarPopoverView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "moon")
                         .font(.system(size: 11))
-                    Text(reminderStore.reminders.isEmpty ? L("添加每日提醒…", "Add Daily Reminder…") : L("管理提醒…", "Manage Reminders…"))
+                    Text(reminderStore.reminders.isEmpty ? L("添加每日弹窗提醒…", "Add Pop-up Reminder…") : L("管理提醒…", "Manage Reminders…"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

@@ -8,7 +8,7 @@
 
 ## English
 
-Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily habit reminders, with voice input. The interface is available in English and Chinese.
+Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily pop-up reminders, with voice input. The interface is available in English and Chinese.
 
 *chivvy* /ˈtʃɪvi/: to keep telling someone to do something until they do it. That's what the alert does: it floats over everything, including full-screen apps, and only lets you snooze a few times.
 
@@ -26,7 +26,7 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily ha
 - Repeat the last timer with one click
 - Keyboard: Space pause / resume, Esc cancel, Return start
 
-**Daily reminders**
+**Daily pop-up reminders**
 - Up to 8 reminders, each repeating on the weekdays you pick (every day, weekdays, weekends, or any mix)
 - The alert floats above everything, including full-screen apps, and plays a sound until you dismiss it (auto-stops after 45 s)
 - Snooze 5 or 10 minutes, at most 3 times per reminder
@@ -37,7 +37,7 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily ha
 **Voice input**
 - Press **⌃⌘R** anywhere and say one sentence in Chinese:
   - a relative time ("一分钟后提醒我睡觉") starts a countdown right away
-  - a time of day ("工作日早上八点半提醒我喝水") opens a confirm card, then saves a daily reminder
+  - a time of day ("工作日早上八点半提醒我喝水") opens a confirm card, then saves a daily pop-up reminder
 - The shortcut can be changed at the bottom of the Reminders window
 
 **Menu bar**
@@ -62,13 +62,13 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily ha
 | 一分钟后提醒我睡觉 | 1-minute countdown, note "睡觉" |
 | 半小时后叫我起来 | 30-minute countdown, note "起来" |
 | 倒计时 25 分钟 | 25-minute countdown |
-| 每天晚上十一点提醒我睡觉 | Daily reminder at 23:00, every day, note "睡觉" |
-| 工作日早上八点半提醒我喝水 | Daily reminder at 08:30, Mon–Fri, note "喝水" |
-| 每周一三五晚上九点去跑步 | Daily reminder at 21:00, Mon / Wed / Fri, note "去跑步" |
+| 每天晚上十一点提醒我睡觉 | Pop-up reminder at 23:00, every day, note "睡觉" |
+| 工作日早上八点半提醒我喝水 | Pop-up reminder at 08:30, Mon–Fri, note "喝水" |
+| 每周一三五晚上九点去跑步 | Pop-up reminder at 21:00, Mon / Wed / Fri, note "去跑步" |
 
 Speech is turned into text by macOS's built-in speech recognition, on-device when the Chinese model is available. Chivvy then works out the time, days and note with its own rules. Nothing is sent to a third-party service.
 
-A countdown starts right away, and Chivvy asks first if one is already running. A daily reminder always opens a confirm card, so you can fix anything that was misheard.
+A countdown starts right away, and Chivvy asks first if one is already running. A daily pop-up reminder always opens a confirm card, so you can fix anything that was misheard.
 
 ### Keyboard Shortcuts
 
@@ -130,6 +130,7 @@ Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence pa
 
 - **New name: Chivvy** (formerly Tick). Your reminders, settings and permissions carry over.
 - **New icon**: a countdown ring shaped like a "C", with an alert dot. The menu bar icon matches it.
+- Daily reminders are now called **daily pop-up reminders**, which says what makes them different.
 - Voice input ignores the app name in a sentence ("Chivvy，每天晚上11点提醒我睡觉").
 
 ### What's New (v2.1)
@@ -140,9 +141,9 @@ Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence pa
 
 ### What's New (v2.0)
 
-- **Daily reminders**: pick the weekdays; snooze 5 or 10 minutes, up to 3 times; reminders missed during sleep show on wake; a system notification is the backup when Chivvy isn't running
+- **Daily pop-up reminders**: pick the weekdays; snooze 5 or 10 minutes, up to 3 times; reminders missed during sleep show on wake; a system notification is the backup when Chivvy isn't running
 - **Reminders window**: see all reminders, toggle, edit, batch on / off / delete
-- **Voice input**: ⌃⌘R (customizable); one sentence adds a daily reminder or starts a countdown
+- **Voice input**: ⌃⌘R (customizable); one sentence adds a daily pop-up reminder or starts a countdown
 - **Chinese interface**
 - **Fixes**:
   - the alert now shows over full-screen apps
@@ -179,7 +180,7 @@ Releases up to and including v2.0 were published under MIT and stay under MIT. T
 
 ## 中文
 
-Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 + 每日习惯提醒，支持语音添加。
+Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 + 每日弹窗提醒，支持语音添加。
 
 *chivvy* /ˈtʃɪvi/：不停地催人去做某事，直到做完为止。这正是它的提醒方式：弹窗盖在所有窗口之上，全屏应用里也能看到，只能推迟有限几次。
 
@@ -197,7 +198,7 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 - 一键重复上次计时
 - 键盘操作：空格暂停/继续，Esc 取消，回车开始
 
-**每日提醒**
+**每日弹窗提醒**
 - 最多 8 条，每条可以选择在星期几重复（每天、工作日、周末或任意组合）
 - 到点弹出置顶提醒，全屏应用上也能看到，铃声循环直到你关掉（45 秒后自动停）
 - 可以稍后 5 或 10 分钟再提醒，同一次提醒最多推迟 3 次
@@ -208,7 +209,7 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 **语音输入**
 - 在任何地方按 **⌃⌘R**，说一句话：
   - 说相对时间（"一分钟后提醒我睡觉"）：直接开始倒计时
-  - 说具体时刻（"工作日早上八点半提醒我喝水"）：弹出确认卡片，保存后成为每日提醒
+  - 说具体时刻（"工作日早上八点半提醒我喝水"）：弹出确认卡片，保存后成为每日弹窗提醒
 - 快捷键可以在提醒管理窗口底部修改
 
 **菜单栏**
@@ -233,13 +234,13 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 | 一分钟后提醒我睡觉 | 开始 1 分钟倒计时，备注"睡觉" |
 | 半小时后叫我起来 | 开始 30 分钟倒计时，备注"起来" |
 | 倒计时 25 分钟 | 开始 25 分钟倒计时 |
-| 每天晚上十一点提醒我睡觉 | 每日提醒：23:00，每天，备注"睡觉" |
-| 工作日早上八点半提醒我喝水 | 每日提醒：08:30，周一到周五，备注"喝水" |
-| 每周一三五晚上九点去跑步 | 每日提醒：21:00，周一 / 三 / 五，备注"去跑步" |
+| 每天晚上十一点提醒我睡觉 | 每日弹窗提醒：23:00，每天，备注"睡觉" |
+| 工作日早上八点半提醒我喝水 | 每日弹窗提醒：08:30，周一到周五，备注"喝水" |
+| 每周一三五晚上九点去跑步 | 每日弹窗提醒：21:00，周一 / 三 / 五，备注"去跑步" |
 
 语音由 macOS 自带的语音识别转成文字，有中文离线模型时在本机完成。之后由 Chivvy 自己的规则解析出时间、星期和备注，不会发送给任何第三方服务。
 
-倒计时会直接开始，如果已经有倒计时在进行会先问你是否替换。每日提醒一定会先弹出确认卡片，听错的地方可以当场改。
+倒计时会直接开始，如果已经有倒计时在进行会先问你是否替换。每日弹窗提醒一定会先弹出确认卡片，听错的地方可以当场改。
 
 ### 快捷键
 
@@ -301,6 +302,7 @@ Sources/Chivvy/
 
 - **改名为 Chivvy**（原名 Tick），原有的提醒、设置和系统权限都会保留
 - **新图标**：C 形倒计时环加一个提醒点，菜单栏图标同步更新
+- "每日提醒"更名为**每日弹窗提醒**，更准确地说明它和普通提醒的区别
 - 语音输入会忽略句子里的应用名（"Chivvy，每天晚上11点提醒我睡觉"）
 
 ### 更新日志 (v2.1)
@@ -311,9 +313,9 @@ Sources/Chivvy/
 
 ### 更新日志 (v2.0)
 
-- **每日提醒**：可选星期几；稍后 5 / 10 分钟，最多 3 次；睡眠中错过的提醒唤醒后补弹；Chivvy 未运行时由系统通知兜底
+- **每日弹窗提醒**：可选星期几；稍后 5 / 10 分钟，最多 3 次；睡眠中错过的提醒唤醒后补弹；Chivvy 未运行时由系统通知兜底
 - **提醒管理窗口**：集中查看所有提醒，开关、编辑，批量开启 / 关闭 / 删除
-- **语音输入**：⌃⌘R（可自定义），一句话添加每日提醒或开始倒计时
+- **语音输入**：⌃⌘R（可自定义），一句话添加每日弹窗提醒或开始倒计时
 - **中文界面**
 - **修复**：
   - 全屏应用上也能看到提醒弹窗

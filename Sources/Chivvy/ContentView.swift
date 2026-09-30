@@ -154,7 +154,7 @@ struct ContentView: View {
             )
         }
         .buttonStyle(.plain)
-        .help(L("每日提醒", "Daily reminders"))
+        .help(L("每日弹窗提醒", "Daily pop-up reminders"))
     }
 
     // MARK: - Language Button

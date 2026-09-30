@@ -113,7 +113,7 @@ struct ReminderManagerView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(L("每日提醒", "Daily reminders"))
+                Text(L("每日弹窗提醒", "Daily pop-up reminders"))
                     .font(.system(size: 17, weight: .semibold))
                 Text(headerSubtitle)
                     .font(.system(size: 12))
