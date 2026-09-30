@@ -89,7 +89,7 @@ struct BackgroundTipView: View {
                 .font(.system(size: 18))
                 .foregroundColor(.accentColor)
 
-            Text(L("Tick 仍在这里运行。\n点击这个图标即可打开。", "Tick is still running up here.\nClick this icon to open it."))
+            Text(L("Chivvy 仍在这里运行。\n点击这个图标即可打开。", "Chivvy is still running up here.\nClick this icon to open it."))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)

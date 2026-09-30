@@ -154,7 +154,7 @@ private func testSnoozeRestoreFuture() {
 private func testSnoozeRestoreJustMissed() {
     let s = SnoozeState(reminderID: UUID(), fireDate: date(2026, 9, 30, 23, 10), count: 1)
     let action = s.restoreAction(now: date(2026, 9, 30, 23, 20), grace: 30 * 60)
-    expect(action == .fireNow, "snooze that came due while Tick was closed fires on launch, got \(action)")
+    expect(action == .fireNow, "snooze that came due while Chivvy was closed fires on launch, got \(action)")
 }
 
 private func testSnoozeRestoreStale() {

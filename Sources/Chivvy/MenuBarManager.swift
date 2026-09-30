@@ -22,11 +22,32 @@ final class MenuBarManager: NSObject {
         observeTimer()
     }
 
+    /// The app icon's "C" ring with its alert dot, as a template image so it follows the menu bar's color
+    private static let statusIcon: NSImage = {
+        let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
+            let center = NSPoint(x: 8.5, y: 9)
+            let radius: CGFloat = 6.25
+            let ring = NSBezierPath()
+            ring.appendArc(withCenter: center, radius: radius, startAngle: 45, endAngle: 315)
+            ring.lineWidth = 2.3
+            ring.lineCapStyle = .round
+            NSColor.black.setStroke()
+            ring.stroke()
+            let dot: CGFloat = 2.3
+            NSColor.black.setFill()
+            NSBezierPath(ovalIn: NSRect(x: center.x + radius - dot, y: center.y - dot, width: dot * 2, height: dot * 2)).fill()
+            return true
+        }
+        image.isTemplate = true
+        image.accessibilityDescription = "Chivvy"
+        return image
+    }()
+
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "timer", accessibilityDescription: "Tick")
+            button.image = Self.statusIcon
             button.target = self
             button.action = #selector(statusBarClicked)
         }
@@ -76,7 +97,7 @@ final class MenuBarManager: NSObject {
         switch timerManager.timerState {
         case .idle:
             button.title = ""
-            button.image = NSImage(systemSymbolName: "timer", accessibilityDescription: "Tick")
+            button.image = Self.statusIcon
             button.contentTintColor = nil
 
         case .running:
@@ -140,7 +161,7 @@ struct MenuBarPopoverView: View {
                     return
                 }
             } label: {
-                Text(L("打开 Tick", "Open Tick"))
+                Text(L("打开 Chivvy", "Open Chivvy"))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
@@ -166,7 +187,7 @@ struct MenuBarPopoverView: View {
                 NSApp.terminate(nil)
             } label: {
                 HStack {
-                    Text(L("退出 Tick", "Quit Tick"))
+                    Text(L("退出 Chivvy", "Quit Chivvy"))
                     Spacer()
                     Text("⌘Q")
                         .foregroundColor(.secondary)

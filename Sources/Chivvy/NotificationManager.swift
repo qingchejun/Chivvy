@@ -80,7 +80,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        // While Tick runs, daily reminders are shown by the in-app alert panel instead
+        // While Chivvy runs, daily reminders are shown by the in-app alert panel instead
         if notification.request.identifier.hasPrefix(ReminderScheduler.notificationPrefix) {
             completionHandler([])
             return

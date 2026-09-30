@@ -6,7 +6,7 @@ struct ParsedReminder: Equatable {
     var minute: Int?
     var weekdays: Set<Int>
     var note: String
-    /// Mentions a specific day ("明天", "10月3号"…); Tick only supports repeating reminders
+    /// Mentions a specific day ("明天", "10月3号"…); Chivvy only supports repeating reminders
     var isOneOff: Bool
 }
 
@@ -50,7 +50,8 @@ enum ReminderParser {
 
     private static func normalize(_ input: String) -> String {
         var text = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        text = text.replacingOccurrences(of: "tick", with: "", options: .caseInsensitive)
+        // The app name, current and old, isn't part of the note
+        text = text.replacingOccurrences(of: "chivvy|tick", with: "", options: [.regularExpression, .caseInsensitive])
         text = text.replacingOccurrences(of: "：", with: ":")
         // "每晚十一点" carries the period inside the repeat word
         text = text.replacingOccurrences(of: "每晚", with: "每天晚上")

@@ -1,5 +1,5 @@
 .build/
 .swiftpm/
-Tick_binary
+Chivvy_binary
 AppIcon.iconset/
 *.dmg

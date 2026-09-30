@@ -29,7 +29,8 @@ private let cases: [(String, String?, Set<Int>, String)] = [
     ("星期六、星期天早上9点爬山", "09:00", [7, 1], "爬山"),
     ("每周日晚上十点复盘", "22:00", [1], "复盘"),
     // Punctuation, polite words, the app name
-    ("Tick，每天晚上11点，提醒我：该睡觉了。", "23:00", DailyReminder.everyDay, "该睡觉了"),
+    ("Chivvy，每天晚上11点，提醒我：该睡觉了。", "23:00", DailyReminder.everyDay, "该睡觉了"),
+    ("tick 每天晚上11点提醒我睡觉", "23:00", DailyReminder.everyDay, "睡觉"),
     ("帮我设置一个每天晚上11点的提醒，早点睡", "23:00", DailyReminder.everyDay, "早点睡"),
     // No time at all
     ("提醒我喝水", nil, DailyReminder.everyDay, "喝水"),

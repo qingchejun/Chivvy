@@ -29,8 +29,8 @@ final class ReminderStore: ObservableObject {
 }
 
 /// Fires daily reminders two ways:
-/// - In-app: full alert panel + looping sound while Tick is running.
-/// - System: repeating calendar notifications, delivered by macOS even if Tick has quit.
+/// - In-app: full alert panel + looping sound while Chivvy is running.
+/// - System: repeating calendar notifications, delivered by macOS even if Chivvy has quit.
 @MainActor
 final class ReminderScheduler: ObservableObject {
     static let shared = ReminderScheduler()
@@ -200,7 +200,7 @@ final class ReminderScheduler: ObservableObject {
         snoozes[id] = state
         armSnoozeTimer(state)
 
-        // Backup in case Tick quits before the snooze is due
+        // Backup in case Chivvy quits before the snooze is due
         addSnoozeBackup(for: reminder, after: TimeInterval(minutes * 60))
     }
 
@@ -260,7 +260,7 @@ final class ReminderScheduler: ObservableObject {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [Self.snoozePrefix + id.uuidString])
     }
 
-    // MARK: - System notifications (backup when Tick isn't running)
+    // MARK: - System notifications (backup when Chivvy isn't running)
 
     /// Suffix 0 = every-day request, 1…7 = per-weekday requests
     private nonisolated static func identifiers(for reminder: DailyReminder) -> [String] {

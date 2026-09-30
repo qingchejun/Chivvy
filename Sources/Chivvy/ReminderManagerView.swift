@@ -41,7 +41,7 @@ final class ReminderWindow {
 }
 
 extension NSWindow {
-    /// The Reminders window is a secondary window; code looking for "the" Tick window skips it
+    /// The Reminders window is a secondary window; code looking for "the" Chivvy window skips it
     var isReminderWindow: Bool { identifier == ReminderWindow.identifier }
 }
 
@@ -159,7 +159,7 @@ struct ReminderManagerView: View {
                 .foregroundStyle(.tertiary)
             Text(L("还没有提醒", "No reminders yet"))
                 .font(.system(size: 14, weight: .medium))
-            Text(L("可以加睡觉、喝水、拉伸之类的习惯提醒\n每天同一时间准时提醒你。", "Add habits like bedtime, water or stretching.\nTick reminds you at the same time every day."))
+            Text(L("可以加睡觉、喝水、拉伸之类的习惯提醒\n每天同一时间准时提醒你。", "Add habits like bedtime, water or stretching.\nChivvy reminds you at the same time every day."))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -248,7 +248,7 @@ struct ReminderManagerView: View {
             Image(systemName: "exclamationmark.circle")
                 .foregroundStyle(.orange)
             Text(loginStatus == .requiresApproval
-                 ? L("请在 系统设置 → 登录项 中允许 Tick，重启后才能收到完整提醒。", "Allow Tick in System Settings → Login Items to keep full alerts after a restart.")
+                 ? L("请在 系统设置 → 登录项 中允许 Chivvy，重启后才能收到完整提醒。", "Allow Chivvy in System Settings → Login Items to keep full alerts after a restart.")
                  : L("建议打开开机自启，重启后也能收到完整的弹窗提醒。", "Turn on auto-start so full alerts keep working after a restart."))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)

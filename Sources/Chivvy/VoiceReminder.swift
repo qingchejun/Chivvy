@@ -169,7 +169,7 @@ final class VoiceReminderController: ObservableObject {
 
         var warning: String?
         if parsed.isOneOff {
-            warning = L("Tick 暂时只支持每天重复的提醒，保存后会按下面的规则重复。", "Tick only supports repeating reminders for now; this one will repeat as set below.")
+            warning = L("Chivvy 暂时只支持每天重复的提醒，保存后会按下面的规则重复。", "Chivvy only supports repeating reminders for now; this one will repeat as set below.")
         } else if parsed.hour == nil {
             warning = L("没听出时间，请选一下。", "No time heard. Please pick one.")
         }

@@ -36,12 +36,12 @@ final class SpeechCapture {
     static func requestPermissions(_ completion: @escaping @MainActor (String?) -> Void) {
         SFSpeechRecognizer.requestAuthorization { status in
             guard status == .authorized else {
-                Task { @MainActor in completion(L("没有语音识别权限，请在 系统设置 → 隐私与安全性 → 语音识别 中允许 Tick。", "Tick needs Speech Recognition access. Allow it in System Settings → Privacy & Security → Speech Recognition.")) }
+                Task { @MainActor in completion(L("没有语音识别权限，请在 系统设置 → 隐私与安全性 → 语音识别 中允许 Chivvy。", "Chivvy needs Speech Recognition access. Allow it in System Settings → Privacy & Security → Speech Recognition.")) }
                 return
             }
             AVCaptureDevice.requestAccess(for: .audio) { granted in
                 Task { @MainActor in
-                    completion(granted ? nil : L("没有麦克风权限，请在 系统设置 → 隐私与安全性 → 麦克风 中允许 Tick。", "Tick needs Microphone access. Allow it in System Settings → Privacy & Security → Microphone."))
+                    completion(granted ? nil : L("没有麦克风权限，请在 系统设置 → 隐私与安全性 → 麦克风 中允许 Chivvy。", "Chivvy needs Microphone access. Allow it in System Settings → Privacy & Security → Microphone."))
                 }
             }
         }
