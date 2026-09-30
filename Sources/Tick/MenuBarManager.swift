@@ -132,8 +132,6 @@ struct MenuBarPopoverView: View {
                 runningContent
             }
 
-            Divider()
-
             Button {
                 dismiss()
                 NSApp.activate(ignoringOtherApps: true)
@@ -284,7 +282,7 @@ struct MenuBarPopoverView: View {
             .padding(.vertical, 4)
 
             HStack(spacing: 8) {
-                TextField("分钟", text: $customMinutes)
+                TextField("自定义", text: $customMinutes)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 70)
                     .multilineTextAlignment(.center)

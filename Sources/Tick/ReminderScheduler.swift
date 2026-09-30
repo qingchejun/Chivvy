@@ -53,7 +53,11 @@ final class ReminderScheduler: ObservableObject {
     private let store = ReminderStore.shared
     /// One panel per reminder, so a second reminder doesn't wipe out the first one's snooze buttons
     private var alertPanels: [UUID: AlertPanel] = [:]
-    private var lastCheck = Date()
+    private static let lastCheckKey = "reminderLastCheck"
+    /// Persisted so a relaunch doesn't re-show alerts that already fired
+    private var lastCheck = Date() {
+        didSet { UserDefaults.standard.set(lastCheck, forKey: Self.lastCheckKey) }
+    }
     private var fireTimer: Timer?
     /// Pending snoozes, one per reminder
     private var snoozes: [UUID: SnoozeState] = [:] {
@@ -68,6 +72,8 @@ final class ReminderScheduler: ObservableObject {
     private init() {}
 
     func start() {
+        // Read before subscribing: the subscription's first emission overwrites lastCheck
+        let savedCheck = UserDefaults.standard.object(forKey: Self.lastCheckKey) as? Date
         removeOrphanedSystemNotifications()
 
         store.$reminders
@@ -111,8 +117,12 @@ final class ReminderScheduler: ObservableObject {
         }
         reevaluateSnoozes()
 
-        // Launched at login a few minutes past bedtime → still show it
-        lastCheck = Date().addingTimeInterval(-missedGrace)
+        // Launched at login a few minutes past bedtime → still show it; relaunched right after it fired → don't
+        lastCheck = ReminderSchedule.launchCheckpoint(
+            saved: savedCheck,
+            now: Date(),
+            grace: missedGrace
+        )
         check()
     }
 

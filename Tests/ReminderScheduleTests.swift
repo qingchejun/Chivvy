@@ -169,6 +169,23 @@ private func testSnoozeCodable() {
     expect(decoded == s, "snooze state round-trips through JSON")
 }
 
+private func testLaunchCheckpoint() {
+    let now = date(2026, 9, 30, 23, 17)
+    let grace: TimeInterval = 30 * 60
+    // Fresh install / nothing saved: look back the full grace window (launch at login after bedtime)
+    expect(ReminderSchedule.launchCheckpoint(saved: nil, now: now, grace: grace) == date(2026, 9, 30, 22, 47),
+           "no saved checkpoint → now - grace")
+    // Quit at 23:14 right after the 23:13 alert, relaunched 23:17: don't show 23:13 again
+    expect(ReminderSchedule.launchCheckpoint(saved: date(2026, 9, 30, 23, 14), now: now, grace: grace) == date(2026, 9, 30, 23, 14),
+           "recent checkpoint wins")
+    // Quit yesterday: only the grace window matters
+    expect(ReminderSchedule.launchCheckpoint(saved: date(2026, 9, 29, 9, 0), now: now, grace: grace) == date(2026, 9, 30, 22, 47),
+           "stale checkpoint → now - grace")
+    // Clock moved backwards: never start in the future
+    expect(ReminderSchedule.launchCheckpoint(saved: date(2026, 10, 1, 9, 0), now: now, grace: grace) == now,
+           "future checkpoint clamps to now")
+}
+
 private func testCodableRoundTrip() {
     let r = DailyReminder(hour: 22, minute: 45, note: "Wind down", weekdays: [1, 7], isEnabled: false)
     let data = try! JSONEncoder().encode([r])
@@ -201,6 +218,7 @@ let scheduleTests: [(String, () -> Void)] = [
     ("snoozeRestoreJustMissed", testSnoozeRestoreJustMissed),
     ("snoozeRestoreStale", testSnoozeRestoreStale),
     ("snoozeCodable", testSnoozeCodable),
+    ("launchCheckpoint", testLaunchCheckpoint),
     ("codableRoundTrip", testCodableRoundTrip),
     ("timeLabel", testTimeLabel),
 ]

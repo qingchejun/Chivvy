@@ -75,6 +75,15 @@ enum ReminderSchedule {
             .min { $0.date < $1.date }
     }
 
+    /// Where the first check after launch starts looking back from.
+    /// Picks up from the last check before quitting, so an alert already shown isn't shown again,
+    /// but never further back than `grace` and never in the future.
+    static func launchCheckpoint(saved: Date?, now: Date, grace: TimeInterval) -> Date {
+        let earliest = now.addingTimeInterval(-grace)
+        guard let saved else { return earliest }
+        return min(max(saved, earliest), now)
+    }
+
     /// Occurrences in (from, to] no older than `grace`, oldest first.
     /// Covers on-time firing as well as occurrences missed while the Mac was asleep.
     static func due(in reminders: [DailyReminder], from: Date, to: Date,

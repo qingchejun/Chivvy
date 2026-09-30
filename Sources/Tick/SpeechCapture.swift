@@ -94,7 +94,8 @@ final class SpeechCapture {
             let message = error?.localizedDescription
             Task { @MainActor in
                 guard let self, self.session == current, !self.finished else { return }
-                if let text {
+                // After endAudio the recognizer can send an empty final result; keep what was heard
+                if let text, !text.isEmpty {
                     self.transcript = text
                     self.onPartial?(text)
                     if self.finalWaitTimer == nil {
