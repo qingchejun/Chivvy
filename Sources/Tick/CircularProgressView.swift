@@ -4,6 +4,7 @@ struct CircularProgressView: View {
     let progress: Double
     let timeString: String
     let timerState: TimerState
+    let completionCount: Int
 
     @State private var isPulse = false
     @State private var completionFlash = false
@@ -52,9 +53,8 @@ struct CircularProgressView: View {
                 }
             }
         }
-        .onChange(of: progress) { newProgress in
-            if newProgress == 0 && timerState == .idle && !completionFlash {
-                // Timer just finished
+        .onChange(of: completionCount) { _ in
+            if !completionFlash {
                 withAnimation(.easeOut(duration: 0.3)) {
                     completionFlash = true
                 }

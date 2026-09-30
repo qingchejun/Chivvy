@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         menuBarManager = MenuBarManager(timerManager: TimerManager.shared)
         NotificationManager.shared.requestPermission()
+        ReminderScheduler.shared.start()
 
         NotificationCenter.default.addObserver(
             self,
@@ -24,11 +25,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if !flag {
-            for window in NSApp.windows where window.canBecomeKey {
+        // Check the main window itself: an open Reminders window also counts as "visible"
+        for window in NSApp.windows where window.canBecomeKey && !window.isReminderWindow {
+            if !window.isVisible {
                 window.makeKeyAndOrderFront(nil)
-                return true
             }
+            return true
         }
         return true
     }
@@ -36,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
               window.canBecomeKey,
+              !window.isReminderWindow,
               !UserDefaults.standard.bool(forKey: hasShownBackgroundTipKey) else {
             return
         }
@@ -72,7 +75,7 @@ struct BackgroundTipView: View {
                 .font(.system(size: 18))
                 .foregroundColor(.accentColor)
 
-            Text("Tick is still running here.\nClick this icon to access.")
+            Text("Tick 仍在这里运行。\n点击这个图标即可打开。")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)

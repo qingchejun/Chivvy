@@ -40,7 +40,7 @@ final class MenuBarManager: NSObject {
 
         let pop = NSPopover()
         pop.behavior = .transient
-        pop.contentSize = NSSize(width: 190, height: 0)
+        pop.contentSize = NSSize(width: 220, height: 0)
         pop.contentViewController = NSHostingController(
             rootView: MenuBarPopoverView(timerManager: timerManager, presetStore: PresetStore.shared) {
                 pop.performClose(nil)
@@ -86,7 +86,7 @@ final class MenuBarManager: NSObject {
             button.contentTintColor = nil
 
         case .paused:
-            button.image = NSImage(systemSymbolName: "pause.circle", accessibilityDescription: "Paused")
+            button.image = NSImage(systemSymbolName: "pause.circle", accessibilityDescription: "已暂停")
             button.title = " \(timerManager.formattedTime)"
             button.font = NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)
         }
@@ -116,6 +116,7 @@ final class MenuBarManager: NSObject {
 struct MenuBarPopoverView: View {
     @ObservedObject var timerManager: TimerManager
     @ObservedObject var presetStore: PresetStore
+    @ObservedObject var reminderStore = ReminderStore.shared
     let dismiss: () -> Void
 
     @State private var customMinutes: String = ""
@@ -123,6 +124,8 @@ struct MenuBarPopoverView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            remindersSection
+
             if timerManager.timerState == .idle {
                 idleContent
             } else {
@@ -134,12 +137,12 @@ struct MenuBarPopoverView: View {
             Button {
                 dismiss()
                 NSApp.activate(ignoringOtherApps: true)
-                for window in NSApp.windows where window.canBecomeKey {
+                for window in NSApp.windows where window.canBecomeKey && !window.isReminderWindow {
                     window.makeKeyAndOrderFront(nil)
                     return
                 }
             } label: {
-                Text("Open Tick")
+                Text("打开 Tick")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
@@ -150,7 +153,7 @@ struct MenuBarPopoverView: View {
                 NSApp.terminate(nil)
             } label: {
                 HStack {
-                    Text("Quit Tick")
+                    Text("退出 Tick")
                     Spacer()
                     Text("⌘Q")
                         .foregroundColor(.secondary)
@@ -162,7 +165,54 @@ struct MenuBarPopoverView: View {
             .padding(.vertical, 8)
         }
         .padding(.vertical, 8)
-        .frame(width: 190)
+        .frame(width: 220)
+    }
+
+    private var remindersSection: some View {
+        VStack(spacing: 0) {
+            ForEach(reminderStore.reminders.sorted { ($0.hour, $0.minute) < ($1.hour, $1.minute) }) { reminder in
+                HStack(spacing: 6) {
+                    Text(reminder.timeLabel)
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    Text(reminder.note.isEmpty ? reminder.daysSummary() : reminder.note)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { reminder.isEnabled },
+                        set: { isOn in
+                            guard let index = reminderStore.reminders.firstIndex(where: { $0.id == reminder.id }) else { return }
+                            reminderStore.reminders[index].isEnabled = isOn && !reminderStore.reminders[index].weekdays.isEmpty
+                        }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 3)
+                .opacity(reminder.isEnabled ? 1 : 0.55)
+            }
+
+            Button {
+                dismiss()
+                ReminderWindow.shared.show()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "moon")
+                        .font(.system(size: 11))
+                    Text(reminderStore.reminders.isEmpty ? "添加每日提醒…" : "管理提醒…")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+
+            Divider()
+                .padding(.vertical, 4)
+        }
     }
 
     private var idleContent: some View {
@@ -175,7 +225,7 @@ struct MenuBarPopoverView: View {
                     HStack {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 11))
-                        Text("Repeat last")
+                        Text("重复上次")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -193,7 +243,7 @@ struct MenuBarPopoverView: View {
                     noteText = ""
                     dismiss()
                 } label: {
-                    Text("Start \(preset.label)")
+                    Text("开始 \(preset.label)")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -205,7 +255,7 @@ struct MenuBarPopoverView: View {
                 .padding(.vertical, 4)
 
             HStack {
-                TextField("Note (optional)", text: $noteText)
+                TextField("备注（可选）", text: $noteText)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                     .frame(width: 120)
@@ -215,10 +265,15 @@ struct MenuBarPopoverView: View {
             .padding(.vertical, 4)
 
             HStack(spacing: 8) {
-                TextField("Minutes", text: $customMinutes)
+                TextField("分钟", text: $customMinutes)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 70)
                     .multilineTextAlignment(.center)
+                    .onChange(of: customMinutes) { newValue in
+                        // isNumber alone would accept full-width "５" from Chinese IMEs, which Int() rejects
+                        let digits = newValue.filter { $0.isASCII && $0.isNumber }
+                        customMinutes = (Int(digits) ?? 0) > 999 ? "999" : digits
+                    }
                     .onSubmit {
                         if let mins = Int(customMinutes), mins > 0 {
                             timerManager.start(minutes: mins, seconds: 0, note: noteText)
@@ -228,7 +283,7 @@ struct MenuBarPopoverView: View {
                         }
                     }
 
-                Text("min")
+                Text("分钟")
                     .foregroundColor(.secondary)
                     .font(.system(size: 12))
 
@@ -260,7 +315,7 @@ struct MenuBarPopoverView: View {
                     timerManager.pause()
                     dismiss()
                 } label: {
-                    Text("Pause")
+                    Text("暂停")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -271,7 +326,7 @@ struct MenuBarPopoverView: View {
                     timerManager.resume()
                     dismiss()
                 } label: {
-                    Text("Resume")
+                    Text("继续")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -283,7 +338,7 @@ struct MenuBarPopoverView: View {
                 timerManager.cancel()
                 dismiss()
             } label: {
-                Text("Cancel")
+                Text("取消")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)

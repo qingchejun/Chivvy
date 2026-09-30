@@ -23,6 +23,7 @@ A minimal macOS countdown timer with menu bar integration.
 - Always-on-top mode, launch at login, keyboard shortcuts, Dock badge
 - Repeat last timer with one click
 - Preset editor — add, remove, reorder, persist across sessions
+- Daily reminders — e.g. bedtime; repeat on chosen weekdays, snooze 5 / 10 min (up to 3 times), manage them all in one window
 
 ### Keyboard Shortcuts
 
@@ -46,6 +47,21 @@ Requires macOS 13+ and Xcode Command Line Tools.
 ### Install
 
 Download `Tick.dmg` from [Releases](https://github.com/qingchejun/Tick/releases), drag `Tick.app` to `/Applications`.
+
+### Daily Reminders
+
+Click the 🌙 button (top toolbar) or **管理提醒…** in the menu bar to open the Reminders window. Add up to 8 reminders, pick the days, and turn them on or off in batches.
+
+- While Tick is running, a reminder shows a full-screen-level alert with a looping sound. It also shows up over full-screen apps.
+- If the Mac was asleep at reminder time, the reminder still shows when it wakes within 30 minutes.
+- If Tick isn't running, macOS delivers a regular notification instead. Turn on Auto-start to get the full alert after a restart.
+
+### What's New (v2.0)
+
+- **Daily reminders** — repeat on chosen weekdays; snooze 5 / 10 min, up to 3 times; missed reminders show on wake; system notification backup when Tick isn't running
+- **Reminders window** — see all reminders at a glance, toggle, batch on/off/delete, edit
+- **Chinese UI** — all buttons and prompts are now in Chinese
+- **Fixes** — alert now shows over full-screen apps; alert sound can no longer get stuck looping; cancelling no longer plays the completion animation; stricter number input
 
 ### What's New (v1.1)
 
@@ -86,6 +102,7 @@ MIT
 - 窗口置顶、开机自启动、键盘快捷键、Dock 角标
 - 一键重复上次计时
 - 预设编辑器 — 增删改排序，持久化存储
+- 每日定时提醒 — 比如睡觉提醒；可选星期几，支持稍后 5 / 10 分钟（最多 3 次），在一个窗口里集中管理
 
 ### 快捷键
 
@@ -109,6 +126,21 @@ open /Applications/Tick.app
 ### 安装
 
 从 [Releases](https://github.com/qingchejun/Tick/releases) 下载 `Tick.dmg`，将 `Tick.app` 拖入 `/Applications`。
+
+### 每日提醒
+
+点主窗口顶部的 🌙 按钮，或菜单栏里的 **管理提醒…**，打开提醒管理窗口。最多添加 8 条提醒，可以选择星期几，并批量开启或关闭。
+
+- Tick 运行时，到点会弹出最高层级的提醒窗口，并循环播放铃声；全屏应用上也能看到。
+- 到点时电脑在睡眠，只要 30 分钟内唤醒，仍会补弹提醒。
+- Tick 没有运行时，由系统通知兜底。打开开机自启，重启后也能收到完整的弹窗提醒。
+
+### 更新日志 (v2.0)
+
+- **每日提醒** — 可选星期几；稍后 5 / 10 分钟，最多 3 次；睡眠中错过的提醒唤醒后补弹；Tick 未运行时由系统通知兜底
+- **提醒管理窗口** — 集中查看所有提醒，单条开关、批量开启 / 关闭 / 删除、编辑
+- **中文界面** — 按钮和提示全部改为中文
+- **修复** — 全屏应用上也能看到提醒弹窗；提醒音不会再停不下来；取消计时不再误播完成动画；数字输入校验更严格
 
 ### 更新日志 (v1.1)
 

@@ -12,10 +12,10 @@ struct TimerPreset: Identifiable, Codable, Equatable {
     }
 
     static let builtIn: [TimerPreset] = [
-        TimerPreset(label: "5 min", minutes: 5),
-        TimerPreset(label: "10 min", minutes: 10),
-        TimerPreset(label: "15 min", minutes: 15),
-        TimerPreset(label: "25 min", minutes: 25),
+        TimerPreset(label: "5 分钟", minutes: 5),
+        TimerPreset(label: "10 分钟", minutes: 10),
+        TimerPreset(label: "15 分钟", minutes: 15),
+        TimerPreset(label: "25 分钟", minutes: 25),
     ]
 
     static let maxCount = 5

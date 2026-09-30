@@ -18,6 +18,8 @@ final class TimerManager: ObservableObject {
     @Published private(set) var lastMinutes: Int = 0
     @Published private(set) var lastSeconds: Int = 0
     @Published private(set) var lastNote: String = ""
+    /// Increments each time a countdown finishes (not when cancelled)
+    @Published private(set) var completionCount: Int = 0
 
     var hasLastTimer: Bool { lastMinutes > 0 || lastSeconds > 0 }
 
@@ -122,6 +124,7 @@ final class TimerManager: ObservableObject {
             let finishedNote = note
             note = ""
             updateDockBadge()
+            completionCount += 1
             NotificationManager.shared.sendTimerComplete(note: finishedNote)
             alertPanel.show(note: finishedNote)
         } else if remaining != remainingSeconds {

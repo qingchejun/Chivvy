@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject private var timer = TimerManager.shared
     @ObservedObject private var presetStore = PresetStore.shared
+    @ObservedObject private var reminderScheduler = ReminderScheduler.shared
 
     @State private var inputMinutes: String = ""
     @State private var inputSeconds: String = ""
@@ -31,7 +32,7 @@ struct ContentView: View {
                     HStack(spacing: 4) {
                         Image(systemName: launchAtLogin ? "sunrise.fill" : "sunrise")
                             .font(.system(size: 12, weight: .medium))
-                        Text(launchAtLogin ? "Auto-start" : "Auto-start")
+                        Text("开机自启")
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(launchAtLogin ? .orange : .secondary)
@@ -43,9 +44,12 @@ struct ContentView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .help("Launch at Login")
+                .help("登录时自动启动")
 
                 Spacer()
+
+                reminderButton
+
                 Button {
                     alwaysOnTop.toggle()
                     UserDefaults.standard.set(alwaysOnTop, forKey: "alwaysOnTop")
@@ -54,7 +58,7 @@ struct ContentView: View {
                     HStack(spacing: 4) {
                         Image(systemName: alwaysOnTop ? "pin.fill" : "pin")
                             .font(.system(size: 12, weight: .medium))
-                        Text(alwaysOnTop ? "Pinned" : "Pin")
+                        Text(alwaysOnTop ? "已置顶" : "置顶")
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(alwaysOnTop ? .accentColor : .secondary)
@@ -66,7 +70,7 @@ struct ContentView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .help("Always on Top")
+                .help("窗口置顶")
             }
             .padding(.top, 8)
             .padding(.horizontal, 20)
@@ -77,7 +81,8 @@ struct ContentView: View {
             CircularProgressView(
                 progress: timer.progress,
                 timeString: timer.timerState == .idle ? idleTimeString : timer.formattedTime,
-                timerState: timer.timerState
+                timerState: timer.timerState,
+                completionCount: timer.completionCount
             )
 
             Spacer()
@@ -116,9 +121,38 @@ struct ContentView: View {
                 setWindowLevel(.floating)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            // Auto-start can also be turned on from the Reminders window
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+        }
         .sheet(isPresented: $showPresetEditor) {
             PresetEditorView(store: presetStore)
         }
+    }
+
+    // MARK: - Reminder Button
+
+    private var reminderButton: some View {
+        let upcoming = reminderScheduler.upcoming
+        return Button {
+            ReminderWindow.shared.show()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: upcoming != nil ? "moon.fill" : "moon")
+                    .font(.system(size: 12, weight: .medium))
+                Text(upcoming?.reminder.timeLabel ?? "提醒")
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundColor(upcoming != nil ? .indigo : .secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(upcoming != nil ? Color.indigo.opacity(0.12) : Color.secondary.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
+        .help("每日提醒")
     }
 
     // MARK: - Preset Buttons
@@ -148,14 +182,14 @@ struct ContentView: View {
             .buttonStyle(.bordered)
             .controlSize(.large)
             .disabled(timer.timerState != .idle)
-            .help("Edit Presets")
+            .help("编辑预设")
         }
     }
 
     // MARK: - Note Input
 
     private var noteInput: some View {
-        TextField("Note (optional)", text: $inputNote)
+        TextField("备注（可选）", text: $inputNote)
             .textFieldStyle(.roundedBorder)
             .frame(width: 130)
             .multilineTextAlignment(.center)
@@ -198,15 +232,15 @@ struct ContentView: View {
             switch timer.timerState {
             case .idle:
                 if timer.hasLastTimer {
-                    Button("Repeat") {
+                    Button("重复") {
                         timer.repeatLast()
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .help("Repeat \(timer.lastMinutes)m\(timer.lastSeconds > 0 ? " \(timer.lastSeconds)s" : "")")
+                    .help("重复 \(timer.lastMinutes) 分\(timer.lastSeconds > 0 ? " \(timer.lastSeconds) 秒" : "")")
                 }
 
-                Button("Start") {
+                Button("开始") {
                     startFromInput()
                 }
                 .buttonStyle(.borderedProminent)
@@ -215,14 +249,14 @@ struct ContentView: View {
                 .help("⏎ Return")
 
             case .running:
-                Button("Pause") {
+                Button("暂停") {
                     timer.pause()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .help("␣ Space")
 
-                Button("Cancel") {
+                Button("取消") {
                     timer.cancel()
                 }
                 .buttonStyle(.bordered)
@@ -231,14 +265,14 @@ struct ContentView: View {
                 .help("⎋ Escape")
 
             case .paused:
-                Button("Resume") {
+                Button("继续") {
                     timer.resume()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .help("␣ Space")
 
-                Button("Cancel") {
+                Button("取消") {
                     timer.cancel()
                 }
                 .buttonStyle(.bordered)
@@ -257,9 +291,9 @@ struct ContentView: View {
 
     private var shortcutHint: String {
         if timer.timerState != .idle {
-            return "Space to pause/resume · Esc to cancel"
+            return "Space 暂停/继续 · Esc 取消"
         }
-        return "Return to start"
+        return "Return 开始"
     }
 
     private var idleTimeString: String {
@@ -285,7 +319,8 @@ struct ContentView: View {
     }
 
     private func filterNumericInput(_ value: String, max: Int) -> String {
-        let filtered = value.filter { $0.isNumber }
+        // isNumber alone would accept full-width "５" from Chinese IMEs, which Int() rejects
+        let filtered = value.filter { $0.isASCII && $0.isNumber }
         if let num = Int(filtered), num > max {
             return String(max)
         }
@@ -293,7 +328,7 @@ struct ContentView: View {
     }
 
     private func setWindowLevel(_ level: NSWindow.Level) {
-        for window in NSApp.windows where window.canBecomeKey && !(window is NSPanel) {
+        for window in NSApp.windows where window.canBecomeKey && !(window is NSPanel) && !window.isReminderWindow {
             window.level = level
         }
     }
@@ -333,25 +368,25 @@ struct PresetEditorView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Edit Presets")
+            Text("编辑预设")
                 .font(.headline)
 
             List {
                 ForEach($editingPresets) { $preset in
                     HStack(spacing: 12) {
-                        TextField("Label", text: $preset.label)
+                        TextField("名称", text: $preset.label)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
 
-                        TextField("Min", text: Binding(
+                        TextField("分钟", text: Binding(
                             get: { String(preset.minutes) },
-                            set: { preset.minutes = Int($0) ?? preset.minutes }
+                            set: { preset.minutes = Int($0).map { min(max($0, 1), 999) } ?? preset.minutes }
                         ))
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 50)
                         .multilineTextAlignment(.center)
 
-                        Text("min")
+                        Text("分钟")
                             .foregroundStyle(.secondary)
                             .font(.system(size: 12))
 
@@ -374,18 +409,18 @@ struct PresetEditorView: View {
 
             if editingPresets.count < TimerPreset.maxCount {
                 HStack(spacing: 8) {
-                    TextField("Label", text: $newLabel)
+                    TextField("名称", text: $newLabel)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 80)
 
-                    TextField("Min", text: $newMinutes)
+                    TextField("分钟", text: $newMinutes)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 50)
                         .multilineTextAlignment(.center)
 
-                    Button("Add") {
+                    Button("添加") {
                         if let mins = Int(newMinutes), mins > 0, !newLabel.isEmpty {
-                            editingPresets.append(TimerPreset(label: newLabel, minutes: mins))
+                            editingPresets.append(TimerPreset(label: newLabel, minutes: min(mins, 999)))
                             newLabel = ""
                             newMinutes = ""
                         }
@@ -395,18 +430,18 @@ struct PresetEditorView: View {
             }
 
             HStack(spacing: 12) {
-                Button("Reset") {
+                Button("恢复默认") {
                     editingPresets = TimerPreset.builtIn
                 }
                 .foregroundStyle(.secondary)
 
                 Spacer()
 
-                Button("Cancel") {
+                Button("取消") {
                     dismiss()
                 }
 
-                Button("Save") {
+                Button("保存") {
                     store.presets = editingPresets
                     dismiss()
                 }
