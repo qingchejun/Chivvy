@@ -6,7 +6,7 @@ struct TickApp: App {
 
     var body: some Scene {
         Window("Tick", id: "main") {
-            ContentView()
+            LanguageRoot { ContentView() }
         }
         .defaultSize(width: 380, height: 490)
     }

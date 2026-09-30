@@ -21,16 +21,22 @@ final class ReminderWindow {
                 defer: false
             )
             window.identifier = Self.identifier
-            window.title = "提醒"
+            window.title = Self.title
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(
-                rootView: ReminderManagerView(store: .shared, scheduler: .shared)
+                rootView: LanguageRoot { ReminderManagerView(store: .shared, scheduler: .shared) }
             )
             window.center()
             self.window = window
         }
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    private static var title: String { L("提醒", "Reminders") }
+
+    func languageDidChange() {
+        window?.title = Self.title
     }
 }
 
@@ -86,12 +92,12 @@ struct ReminderManagerView: View {
         }
         .confirmationDialog(
             selection.isEmpty
-                ? "删除全部 \(targetIDs.count) 条提醒？"
-                : "删除 \(targetIDs.count) 条提醒？",
+                ? L("删除全部 \(targetIDs.count) 条提醒？", targetIDs.count == 1 ? "Delete 1 reminder?" : "Delete all \(targetIDs.count) reminders?")
+                : L("删除 \(targetIDs.count) 条提醒？", targetIDs.count == 1 ? "Delete 1 reminder?" : "Delete \(targetIDs.count) reminders?"),
             isPresented: $confirmingDelete,
             titleVisibility: .visible
         ) {
-            Button("删除", role: .destructive) {
+            Button(L("删除", "Delete"), role: .destructive) {
                 let ids = targetIDs
                 store.reminders.removeAll { ids.contains($0.id) }
                 selection.removeAll()
@@ -107,7 +113,7 @@ struct ReminderManagerView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("每日提醒")
+                Text(L("每日提醒", "Daily reminders"))
                     .font(.system(size: 17, weight: .semibold))
                 Text(headerSubtitle)
                     .font(.system(size: 12))
@@ -117,28 +123,30 @@ struct ReminderManagerView: View {
             Button {
                 VoiceReminderController.shared.beginListening()
             } label: {
-                Label("语音添加", systemImage: "mic")
+                Label(L("语音添加", "Add by Voice"), systemImage: "mic")
             }
-            .help("也可以在任何地方按 \(VoiceReminderController.shared.hotKeyCombo.label)")
+            .help(L("也可以在任何地方按 \(VoiceReminderController.shared.hotKeyCombo.label)",
+                     "Or press \(VoiceReminderController.shared.hotKeyCombo.label) anywhere"))
             Button {
                 editing = DailyReminder(hour: 23, minute: 0)
             } label: {
-                Label("新建", systemImage: "plus")
+                Label(L("新建", "New"), systemImage: "plus")
             }
             .disabled(store.reminders.count >= DailyReminder.maxCount)
             .help(store.reminders.count >= DailyReminder.maxCount
-                  ? "最多 \(DailyReminder.maxCount) 条提醒"
-                  : "添加提醒")
+                  ? L("最多 \(DailyReminder.maxCount) 条提醒", "Up to \(DailyReminder.maxCount) reminders")
+                  : L("添加提醒", "Add Reminder"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
 
     private var headerSubtitle: String {
-        guard !store.reminders.isEmpty else { return "还没有提醒" }
-        var text = "共 \(store.reminders.count) 条，已开启 \(enabledCount) 条"
+        guard !store.reminders.isEmpty else { return L("还没有提醒", "No reminders yet") }
+        var text = L("共 \(store.reminders.count) 条，已开启 \(enabledCount) 条",
+                     "\(store.reminders.count) total, \(enabledCount) on")
         if let upcoming = scheduler.upcoming {
-            text += " · 下次：\(Self.relativeLabel(upcoming.date)) \(upcoming.reminder.timeLabel)"
+            text += L(" · 下次：", " · Next: ") + "\(Self.relativeLabel(upcoming.date)) \(upcoming.reminder.timeLabel)"
         }
         return text
     }
@@ -149,13 +157,13 @@ struct ReminderManagerView: View {
             Image(systemName: "moon.zzz")
                 .font(.system(size: 34))
                 .foregroundStyle(.tertiary)
-            Text("还没有提醒")
+            Text(L("还没有提醒", "No reminders yet"))
                 .font(.system(size: 14, weight: .medium))
-            Text("可以加睡觉、喝水、拉伸之类的习惯提醒\n每天同一时间准时提醒你。")
+            Text(L("可以加睡觉、喝水、拉伸之类的习惯提醒\n每天同一时间准时提醒你。", "Add habits like bedtime, water or stretching.\nTick reminds you at the same time every day."))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button("添加提醒") {
+            Button(L("添加提醒", "Add Reminder")) {
                 editing = DailyReminder(hour: 23, minute: 0)
             }
             .padding(.top, 4)
@@ -176,7 +184,7 @@ struct ReminderManagerView: View {
         .contextMenu(forSelectionType: UUID.self) { ids in
             // Right-click on empty space passes no ids; don't offer actions that would hit everything
             if ids.isEmpty {
-                Button("新建提醒…") { editing = DailyReminder(hour: 23, minute: 0) }
+                Button(L("新建提醒…", "New Reminder…")) { editing = DailyReminder(hour: 23, minute: 0) }
                     .disabled(store.reminders.count >= DailyReminder.maxCount)
             } else {
                 selectionMenu(ids)
@@ -191,13 +199,13 @@ struct ReminderManagerView: View {
     @ViewBuilder
     private func selectionMenu(_ ids: Set<UUID>) -> some View {
         if ids.count == 1, let id = ids.first, let reminder = store.reminders.first(where: { $0.id == id }) {
-            Button("编辑…") { editing = reminder }
+            Button(L("编辑…", "Edit…")) { editing = reminder }
             Divider()
         }
-        Button("开启") { setEnabled(true, for: ids) }
-        Button("关闭") { setEnabled(false, for: ids) }
+        Button(L("开启", "Turn On")) { setEnabled(true, for: ids) }
+        Button(L("关闭", "Turn Off")) { setEnabled(false, for: ids) }
         Divider()
-        Button("删除…") {
+        Button(L("删除…", "Delete…")) {
             selection = ids
             confirmingDelete = true
         }
@@ -210,7 +218,7 @@ struct ReminderManagerView: View {
             }
 
             HStack(spacing: 8) {
-                Text("语音添加快捷键")
+                Text(L("语音添加快捷键", "Voice shortcut"))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 ShortcutRecorder(controller: .shared)
@@ -218,13 +226,15 @@ struct ReminderManagerView: View {
             }
 
             HStack(spacing: 8) {
-                Text(selection.isEmpty ? "未选择：操作将作用于全部提醒" : "已选 \(selection.count) 条")
+                Text(selection.isEmpty
+                     ? L("未选择：操作将作用于全部提醒", "No selection: applies to all")
+                     : L("已选 \(selection.count) 条", "\(selection.count) selected"))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("开启") { setEnabled(true, for: targetIDs) }
-                Button("关闭") { setEnabled(false, for: targetIDs) }
-                Button("删除…", role: .destructive) { confirmingDelete = true }
+                Button(L("开启", "Turn On")) { setEnabled(true, for: targetIDs) }
+                Button(L("关闭", "Turn Off")) { setEnabled(false, for: targetIDs) }
+                Button(L("删除…", "Delete…"), role: .destructive) { confirmingDelete = true }
             }
             .controlSize(.small)
             .disabled(store.reminders.isEmpty)
@@ -238,18 +248,18 @@ struct ReminderManagerView: View {
             Image(systemName: "exclamationmark.circle")
                 .foregroundStyle(.orange)
             Text(loginStatus == .requiresApproval
-                 ? "请在 系统设置 → 登录项 中允许 Tick，重启后才能收到完整提醒。"
-                 : "建议打开开机自启，重启后也能收到完整的弹窗提醒。")
+                 ? L("请在 系统设置 → 登录项 中允许 Tick，重启后才能收到完整提醒。", "Allow Tick in System Settings → Login Items to keep full alerts after a restart.")
+                 : L("建议打开开机自启，重启后也能收到完整的弹窗提醒。", "Turn on auto-start so full alerts keep working after a restart."))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             Spacer()
             if loginStatus == .requiresApproval {
-                Button("打开设置") {
+                Button(L("打开设置", "Open Settings")) {
                     SMAppService.openSystemSettingsLoginItems()
                 }
                 .controlSize(.small)
             } else {
-                Button("打开") {
+                Button(L("打开", "Turn On")) {
                     try? SMAppService.mainApp.register()
                     loginStatus = SMAppService.mainApp.status
                 }
@@ -278,9 +288,9 @@ struct ReminderManagerView: View {
     }
 
     static func relativeLabel(_ date: Date, calendar: Calendar = .current) -> String {
-        if calendar.isDateInToday(date) { return "今天" }
-        if calendar.isDateInTomorrow(date) { return "明天" }
-        return calendar.shortWeekdaySymbols[calendar.component(.weekday, from: date) - 1]
+        if calendar.isDateInToday(date) { return L("今天", "Today") }
+        if calendar.isDateInTomorrow(date) { return L("明天", "Tomorrow") }
+        return DailyReminder.shortName(weekday: calendar.component(.weekday, from: date))
     }
 }
 
@@ -311,7 +321,7 @@ private struct ReminderListRow: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
-                Text(reminder.note.isEmpty ? "无备注" : reminder.note)
+                Text(reminder.note.isEmpty ? L("无备注", "No note") : reminder.note)
                     .font(.system(size: 12))
                     .foregroundStyle(reminder.note.isEmpty ? .tertiary : .secondary)
                     .lineLimit(1)
@@ -331,7 +341,7 @@ private struct ReminderListRow: View {
                 Image(systemName: "pencil")
             }
             .buttonStyle(.borderless)
-            .help("编辑")
+            .help(L("编辑", "Edit"))
         }
         .padding(.vertical, 4)
         .opacity(reminder.isEnabled ? 1 : 0.55)
@@ -354,16 +364,16 @@ private struct ReminderEditSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(isNew ? "新建提醒" : "编辑提醒")
+            Text(isNew ? L("新建提醒", "New Reminder") : L("编辑提醒", "Edit Reminder"))
                 .font(.headline)
 
             ReminderForm(draft: $draft)
 
             HStack {
                 Spacer()
-                Button("取消") { dismiss() }
+                Button(L("取消", "Cancel")) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("保存") {
+                Button(L("保存", "Save")) {
                     onSave(draft)
                     dismiss()
                 }
@@ -391,15 +401,15 @@ private struct ShortcutRecorder: View {
             Button {
                 isRecording ? stopRecording() : startRecording()
             } label: {
-                Text(isRecording ? "请按下新的快捷键…" : controller.hotKeyCombo.label)
+                Text(isRecording ? L("请按下新的快捷键…", "Press a shortcut…") : controller.hotKeyCombo.label)
                     .font(.system(size: 12, weight: .medium).monospacedDigit())
                     .frame(minWidth: 90)
             }
             .controlSize(.small)
-            .help("点击后按下新的组合键，需包含 ⌃ 或 ⌥；按 Esc 取消")
+            .help(L("点击后按下新的组合键，需包含 ⌃ 或 ⌥；按 Esc 取消", "Click, then press a new combination with ⌃ or ⌥. Esc cancels."))
 
             if isRecording {
-                Button("恢复默认") {
+                Button(L("恢复默认", "Restore Defaults")) {
                     apply(.defaultVoiceReminder)
                 }
                 .controlSize(.small)
@@ -426,7 +436,7 @@ private struct ShortcutRecorder: View {
             if let combo = HotKeyCombo(event: event) {
                 apply(combo)
             } else {
-                message = "需要同时按住 ⌃ 或 ⌥"
+                message = L("需要同时按住 ⌃ 或 ⌥", "Hold ⌃ or ⌥ too")
             }
             return nil
         }
@@ -436,7 +446,8 @@ private struct ShortcutRecorder: View {
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
         isRecording = false
-        message = controller.setHotKey(combo) ? nil : "\(combo.label) 无法使用（可能被系统保留），换一个吧"
+        message = controller.setHotKey(combo) ? nil : L("\(combo.label) 无法使用（可能被系统保留），换一个吧",
+                                                               "\(combo.label) isn't available (may be reserved by the system). Try another.")
     }
 
     private func stopRecording() {
@@ -477,7 +488,7 @@ struct ReminderForm: View {
             HStack(spacing: 12) {
                 DatePicker("", selection: time, displayedComponents: .hourAndMinute)
                     .labelsHidden()
-                TextField("备注，比如：该睡觉了", text: $draft.note)
+                TextField(L("备注，比如：该睡觉了", "Note, e.g. Time for bed"), text: $draft.note)
                     .textFieldStyle(.roundedBorder)
             }
 
@@ -488,11 +499,11 @@ struct ReminderForm: View {
                     }
                 }
                 HStack(spacing: 6) {
-                    quickDays("每天", DailyReminder.everyDay)
-                    quickDays("工作日", DailyReminder.weekdaysOnly)
-                    quickDays("周末", DailyReminder.weekendsOnly)
+                    quickDays(L("每天", "Every day"), DailyReminder.everyDay)
+                    quickDays(L("工作日", "Weekdays"), DailyReminder.weekdaysOnly)
+                    quickDays(L("周末", "Weekends"), DailyReminder.weekendsOnly)
                     if draft.weekdays.isEmpty {
-                        Text("至少选择一天")
+                        Text(L("至少选择一天", "Pick at least one day"))
                             .font(.system(size: 11))
                             .foregroundStyle(.orange)
                     }
@@ -510,7 +521,7 @@ struct ReminderForm: View {
                 draft.weekdays.insert(weekday)
             }
         } label: {
-            Text(calendar.veryShortWeekdaySymbols[weekday - 1])
+            Text(DailyReminder.letter(weekday: weekday))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(isOn ? .white : .secondary)
                 .frame(width: 26, height: 26)

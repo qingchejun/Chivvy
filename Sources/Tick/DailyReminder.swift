@@ -31,16 +31,27 @@ struct DailyReminder: Identifiable, Codable, Equatable {
 
     func daysSummary(calendar: Calendar = .current) -> String {
         switch weekdays {
-        case Self.everyDay: return "每天"
-        case Self.weekdaysOnly: return "工作日"
-        case Self.weekendsOnly: return "周末"
-        case []: return "从不"
+        case Self.everyDay: return L("每天", "Every day")
+        case Self.weekdaysOnly: return L("工作日", "Weekdays")
+        case Self.weekendsOnly: return L("周末", "Weekends")
+        case []: return L("从不", "Never")
         default:
             return Self.orderedWeekdays(calendar: calendar)
                 .filter(weekdays.contains)
-                .map { calendar.shortWeekdaySymbols[$0 - 1] }
+                .map { Self.shortName(weekday: $0) }
                 .joined(separator: " ")
         }
+    }
+
+    /// Weekday names in the UI language (not the system locale), 1 = Sunday
+    static func shortName(weekday: Int) -> String {
+        L(["周日", "周一", "周二", "周三", "周四", "周五", "周六"][weekday - 1],
+          ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][weekday - 1])
+    }
+
+    static func letter(weekday: Int) -> String {
+        L(["日", "一", "二", "三", "四", "五", "六"][weekday - 1],
+          ["S", "M", "T", "W", "T", "F", "S"][weekday - 1])
     }
 
     /// Weekdays ordered from the user's first weekday (e.g. Mon…Sun or Sun…Sat)

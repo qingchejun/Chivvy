@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import ServiceManagement
 import SwiftUI
 
@@ -6,12 +7,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBarManager: MenuBarManager?
     private let hasShownBackgroundTipKey = "hasShownBackgroundTip"
     private var tipPopover: NSPopover?
+    private var languageObserver: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Settle the language before anything writes the keys the upgrade check looks at
+        _ = L10n.current
         menuBarManager = MenuBarManager(timerManager: TimerManager.shared)
         NotificationManager.shared.requestPermission()
         ReminderScheduler.shared.start()
         VoiceReminderController.shared.start()
+
+        // Open windows rebuild themselves (LanguageRoot); these parts live outside SwiftUI
+        languageObserver = LanguageStore.shared.$language
+            .dropFirst()
+            .sink { _ in
+                // L10n.current is already saved when this fires, so L(...) returns the new language
+                ReminderScheduler.shared.languageDidChange()
+                ReminderWindow.shared.languageDidChange()
+            }
 
         NotificationCenter.default.addObserver(
             self,
@@ -76,7 +89,7 @@ struct BackgroundTipView: View {
                 .font(.system(size: 18))
                 .foregroundColor(.accentColor)
 
-            Text("Tick 仍在这里运行。\n点击这个图标即可打开。")
+            Text(L("Tick 仍在这里运行。\n点击这个图标即可打开。", "Tick is still running up here.\nClick this icon to open it."))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)

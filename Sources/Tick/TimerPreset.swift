@@ -11,12 +11,18 @@ struct TimerPreset: Identifiable, Codable, Equatable {
         self.minutes = minutes
     }
 
-    static let builtIn: [TimerPreset] = [
-        TimerPreset(label: "5 分钟", minutes: 5),
-        TimerPreset(label: "10 分钟", minutes: 10),
-        TimerPreset(label: "15 分钟", minutes: 15),
-        TimerPreset(label: "25 分钟", minutes: 25),
-    ]
+    /// Auto-generated labels ("5 分钟" / "5 min") follow the UI language; names the user typed are kept as is
+    var displayLabel: String {
+        label == "\(minutes) 分钟" || label == "\(minutes) min" ? Self.defaultLabel(minutes) : label
+    }
+
+    static func defaultLabel(_ minutes: Int) -> String {
+        L("\(minutes) 分钟", "\(minutes) min")
+    }
+
+    static var builtIn: [TimerPreset] {
+        [5, 10, 15, 25].map { TimerPreset(label: defaultLabel($0), minutes: $0) }
+    }
 
     static let maxCount = 5
 }

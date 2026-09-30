@@ -6,6 +6,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 OUT="$(mktemp -d)/TickTests"
-swiftc Sources/Tick/DailyReminder.swift Sources/Tick/ReminderParser.swift Sources/Tick/GlobalHotKey.swift Tests/*.swift \
+swiftc Sources/Tick/DailyReminder.swift Sources/Tick/ReminderParser.swift Sources/Tick/GlobalHotKey.swift \
+    Sources/Tick/Localization.swift Sources/Tick/TimerPreset.swift Tests/*.swift \
     -o "$OUT" -sdk "$(xcrun --show-sdk-path)" -parse-as-library
 "$OUT"

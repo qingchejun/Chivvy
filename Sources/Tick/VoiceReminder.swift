@@ -131,7 +131,7 @@ final class VoiceReminderController: ObservableObject {
     private func handle(_ text: String) {
         let heard = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !heard.isEmpty else {
-            phase = .failed(message: "没听清，再试一次吧。", heard: nil)
+            phase = .failed(message: L("没听清，再试一次吧。", "Didn't catch that. Try again?"), heard: nil)
             return
         }
 
@@ -169,9 +169,9 @@ final class VoiceReminderController: ObservableObject {
 
         var warning: String?
         if parsed.isOneOff {
-            warning = "Tick 暂时只支持每天重复的提醒，保存后会按下面的规则重复。"
+            warning = L("Tick 暂时只支持每天重复的提醒，保存后会按下面的规则重复。", "Tick only supports repeating reminders for now; this one will repeat as set below.")
         } else if parsed.hour == nil {
-            warning = "没听出时间，请选一下。"
+            warning = L("没听出时间，请选一下。", "No time heard. Please pick one.")
         }
 
         phase = .confirm(draft: draft, heard: heard, warning: warning)
@@ -179,7 +179,8 @@ final class VoiceReminderController: ObservableObject {
 
     func save(_ reminder: DailyReminder, heard: String) {
         guard store.reminders.count < DailyReminder.maxCount else {
-            phase = .failed(message: "最多只能有 \(DailyReminder.maxCount) 条提醒，先在提醒窗口里删掉一些吧。", heard: heard)
+            phase = .failed(message: L("最多只能有 \(DailyReminder.maxCount) 条提醒，先在提醒窗口里删掉一些吧。",
+                                               "You can have up to \(DailyReminder.maxCount) reminders. Delete some in the Reminders window first."), heard: heard)
             return
         }
         store.reminders.append(reminder)
@@ -246,7 +247,7 @@ final class VoiceReminderController: ObservableObject {
         panel.isMovableByWindowBackground = true
         panel.hidesOnDeactivate = false
 
-        let hosting = NSHostingView(rootView: VoiceReminderView(controller: self))
+        let hosting = NSHostingView(rootView: LanguageRoot { VoiceReminderView(controller: self) })
         panel.contentView = hosting
         return panel
     }
@@ -301,18 +302,20 @@ private struct VoiceReminderView: View {
             HStack(spacing: 8) {
                 Image(systemName: "mic.fill")
                     .foregroundStyle(.red)
-                Text("正在听…")
+                Text(L("正在听…", "Listening…"))
                     .font(.system(size: 15, weight: .semibold))
                 Spacer()
-                Button("取消") { controller.close() }
+                Button(L("取消", "Cancel")) { controller.close() }
                     .keyboardShortcut(.cancelAction)
                     .controlSize(.small)
             }
-            Text(transcript.isEmpty ? "比如：每天晚上十一点提醒我睡觉 / 十分钟后提醒我关火" : transcript)
+            Text(transcript.isEmpty ? L("比如：每天晚上十一点提醒我睡觉 / 十分钟后提醒我关火",
+                                                   "Speak Mandarin, e.g. 每天晚上十一点提醒我睡觉 / 十分钟后提醒我关火") : transcript)
                 .font(.system(size: 16))
                 .foregroundStyle(transcript.isEmpty ? .tertiary : .primary)
                 .frame(maxWidth: .infinity, minHeight: 40, alignment: .topLeading)
-            Text("说完停顿 2 秒自动结束，或再按 \(controller.hotKeyCombo.label) 结束")
+            Text(L("说完停顿 2 秒自动结束，或再按 \(controller.hotKeyCombo.label) 结束",
+                    "Stops after a 2-second pause, or press \(controller.hotKeyCombo.label) again"))
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
         }
@@ -323,18 +326,18 @@ private struct VoiceReminderView: View {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                Text("已添加提醒")
+                Text(L("已添加提醒", "Reminder added"))
                     .font(.system(size: 15, weight: .semibold))
             }
-            Text("\(reminder.timeLabel) · \(reminder.daysSummary()) · \(reminder.note.isEmpty ? "无备注" : reminder.note)")
+            Text("\(reminder.timeLabel) · \(reminder.daysSummary()) · \(reminder.note.isEmpty ? L("无备注", "No note") : reminder.note)")
                 .font(.system(size: 16))
-            Text("听到的是：\(heard)")
+            Text(L("听到的是：", "Heard: ") + heard)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             HStack {
                 Spacer()
-                Button("撤销") { controller.undo(reminder) }
-                Button("好") { controller.close() }
+                Button(L("撤销", "Undo")) { controller.undo(reminder) }
+                Button(L("好", "OK")) { controller.close() }
                     .keyboardShortcut(.defaultAction)
             }
             .controlSize(.small)
@@ -344,9 +347,9 @@ private struct VoiceReminderView: View {
     private static func durationLabel(_ seconds: Int) -> String {
         let h = seconds / 3600, m = seconds % 3600 / 60, s = seconds % 60
         var parts: [String] = []
-        if h > 0 { parts.append("\(h) 小时") }
-        if m > 0 { parts.append("\(m) 分钟") }
-        if s > 0 { parts.append("\(s) 秒") }
+        if h > 0 { parts.append(L("\(h) 小时", "\(h) hr")) }
+        if m > 0 { parts.append(L("\(m) 分钟", "\(m) min")) }
+        if s > 0 { parts.append(L("\(s) 秒", "\(s) sec")) }
         return parts.joined(separator: " ")
     }
 
@@ -355,17 +358,17 @@ private struct VoiceReminderView: View {
             HStack(spacing: 8) {
                 Image(systemName: "timer")
                     .foregroundStyle(.green)
-                Text("已开始倒计时 \(Self.durationLabel(seconds))")
+                Text(L("已开始倒计时 ", "Countdown started: ") + Self.durationLabel(seconds))
                     .font(.system(size: 15, weight: .semibold))
             }
             if !note.isEmpty {
-                Text("到时提醒：\(note)")
+                Text(L("到时提醒：", "Reminder: ") + note)
                     .font(.system(size: 14))
             }
             HStack {
                 Spacer()
-                Button("撤销") { controller.undoCountdown() }
-                Button("好") { controller.close() }
+                Button(L("撤销", "Undo")) { controller.undoCountdown() }
+                Button(L("好", "OK")) { controller.close() }
                     .keyboardShortcut(.defaultAction)
             }
             .controlSize(.small)
@@ -377,19 +380,19 @@ private struct VoiceReminderView: View {
             HStack(spacing: 8) {
                 Image(systemName: "timer")
                     .foregroundStyle(.orange)
-                Text("已有一个倒计时在进行，要替换吗？")
+                Text(L("已有一个倒计时在进行，要替换吗？", "A countdown is already running. Replace it?"))
                     .font(.system(size: 15, weight: .semibold))
             }
-            Text("当前：\(TimerManager.shared.formattedTime)\(TimerManager.shared.note.isEmpty ? "" : " · \(TimerManager.shared.note)")")
+            Text(L("当前：", "Current: ") + "\(TimerManager.shared.formattedTime)\(TimerManager.shared.note.isEmpty ? "" : " · \(TimerManager.shared.note)")")
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
-            Text("新的：\(Self.durationLabel(seconds))\(note.isEmpty ? "" : " · \(note)")")
+            Text(L("新的：", "New: ") + "\(Self.durationLabel(seconds))\(note.isEmpty ? "" : " · \(note)")")
                 .font(.system(size: 13))
             HStack {
                 Spacer()
-                Button("取消") { controller.close() }
+                Button(L("取消", "Cancel")) { controller.close() }
                     .keyboardShortcut(.cancelAction)
-                Button("替换") { controller.startCountdown(seconds: seconds, note: note) }
+                Button(L("替换", "Replace")) { controller.startCountdown(seconds: seconds, note: note) }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
             }
@@ -407,15 +410,15 @@ private struct VoiceReminderView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let heard {
-                Text("听到的是：\(heard)")
+                Text(L("听到的是：", "Heard: ") + heard)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             HStack {
                 Spacer()
-                Button("关闭") { controller.close() }
+                Button(L("关闭", "Close")) { controller.close() }
                     .keyboardShortcut(.cancelAction)
-                Button("再说一次") { controller.beginListening() }
+                Button(L("再说一次", "Try Again")) { controller.beginListening() }
                     .keyboardShortcut(.defaultAction)
             }
             .controlSize(.small)
@@ -439,9 +442,9 @@ private struct ConfirmCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("添加这条提醒？")
+                Text(L("添加这条提醒？", "Add this reminder?"))
                     .font(.system(size: 15, weight: .semibold))
-                Text("听到的是：\(heard)")
+                Text(L("听到的是：", "Heard: ") + heard)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                 if let warning {
@@ -454,11 +457,11 @@ private struct ConfirmCard: View {
             ReminderForm(draft: $draft)
 
             HStack {
-                Button("重新说") { controller.beginListening() }
+                Button(L("重新说", "Say It Again")) { controller.beginListening() }
                 Spacer()
-                Button("取消") { controller.close() }
+                Button(L("取消", "Cancel")) { controller.close() }
                     .keyboardShortcut(.cancelAction)
-                Button("保存") { controller.save(draft, heard: heard) }
+                Button(L("保存", "Save")) { controller.save(draft, heard: heard) }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
                     .disabled(draft.weekdays.isEmpty)

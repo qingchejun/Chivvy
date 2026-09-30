@@ -13,7 +13,7 @@ final class AlertPanel {
     private static var visibleCount = 0
 
     /// `secondaryActions` show as grey buttons before "知道了"; each also dismisses the panel.
-    func show(title: String = "时间到！", note: String, footnote: String? = nil,
+    func show(title: String = L("时间到！", "Time's up!"), note: String, footnote: String? = nil,
               secondaryActions: [AlertAction] = []) {
         close()
 
@@ -124,7 +124,7 @@ struct AlertContentView: View {
                 Button {
                     onDismiss()
                 } label: {
-                    Text("知道了")
+                    Text(L("知道了", "Got it"))
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(.white)
                         .frame(width: secondaryActions.count > 1 ? 104 : 120, height: 36)

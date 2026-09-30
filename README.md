@@ -6,12 +6,11 @@
 
 ## English
 
-A small macOS menu bar app for countdowns and daily habit reminders, with voice input. The interface is in Chinese.
+A small macOS menu bar app for countdowns and daily habit reminders, with voice input. The interface is available in English and Chinese.
 
 <p align="center">
-  <img src="screenshots/main.png" width="260" alt="Main window">
-  <img src="screenshots/running.png" width="260" alt="Countdown running">
-  <img src="screenshots/reminders.png" width="300" alt="Reminders window">
+  <img src="screenshots/main-en.png" width="260" alt="Main window">
+  <img src="screenshots/reminders-en.png" width="300" alt="Reminders window">
 </p>
 
 ### Features
@@ -43,6 +42,7 @@ A small macOS menu bar app for countdowns and daily habit reminders, with voice 
 - Voice input and the Reminders window are one click away
 
 **Other**
+- English / Chinese interface, switched with the globe button in the main window or from the menu bar. It follows your system language on first launch.
 - Always on top, launch at login
 
 ### Screenshots
@@ -98,7 +98,7 @@ Requires macOS 13+ and Xcode Command Line Tools. The full Xcode app isn't needed
 | Notifications | Backup alert when Tick isn't running | First launch |
 | Microphone | Voice input | First time you press ⌃⌘R |
 | Speech Recognition | Turn speech into text | First time you press ⌃⌘R |
-| Login Items (optional) | Keep reminders working after a restart | When you turn on 开机自启 |
+| Login Items (optional) | Keep reminders working after a restart | When you turn on Auto-start |
 
 ### Development
 
@@ -116,10 +116,17 @@ Sources/Tick/
 ├── ReminderParser.swift                Understands spoken sentences
 ├── SpeechCapture.swift                 Microphone and speech recognition
 ├── VoiceReminder.swift                 Voice panel and flow
-└── GlobalHotKey.swift                  System-wide shortcut
+├── GlobalHotKey.swift                  System-wide shortcut
+└── Localization.swift                  English / Chinese strings
 ```
 
-Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence parsing and shortcut handling (199 assertions).
+Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence parsing, shortcut handling and the language switch (223 assertions).
+
+### What's New (v2.1)
+
+- **English interface**: switch between English and Chinese at any time with the globe button in the main window or from the menu bar. Open windows update right away. New installs follow the system language; upgrades from 2.0 stay in Chinese.
+- Voice input still understands Mandarin only.
+- **License**: from v2.1 Tick is licensed under PolyForm Noncommercial 1.0.0 (see [License](#license)).
 
 ### What's New (v2.0)
 
@@ -150,7 +157,13 @@ Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence pa
 
 ### License
 
-MIT
+[PolyForm Noncommercial 1.0.0](LICENSE). Copyright (c) 2026 青澈君.
+
+- **Free for noncommercial use**: personal use, study, research, hobby projects, and use by charities, schools and public institutions. You may modify and share it, as long as you keep the license and the copyright notice.
+- **Commercial use is not allowed without permission.** This includes selling Tick or a modified version, bundling it into a paid product or service, or using it inside a company for business purposes.
+- For a commercial license, open an issue on GitHub.
+
+Releases up to and including v2.0 were published under MIT and stay under MIT. The noncommercial license applies from v2.1 on.
 
 ---
 
@@ -193,6 +206,7 @@ MIT
 - 一键打开语音输入和提醒管理窗口
 
 **其他**
+- 中英文界面，在主窗口的地球按钮或菜单栏里一键切换；首次启动跟随系统语言
 - 窗口置顶、开机自启
 
 ### 截图
@@ -266,10 +280,17 @@ Sources/Tick/
 ├── ReminderParser.swift                理解说的话
 ├── SpeechCapture.swift                 麦克风和语音识别
 ├── VoiceReminder.swift                 语音浮窗和流程
-└── GlobalHotKey.swift                  全局快捷键
+├── GlobalHotKey.swift                  全局快捷键
+└── Localization.swift                  中英文文案
 ```
 
-运行测试：`./Tests/run.sh`。覆盖提醒调度、句子解析和快捷键处理，共 199 条断言。
+运行测试：`./Tests/run.sh`。覆盖提醒调度、句子解析、快捷键处理和语言切换，共 223 条断言。
+
+### 更新日志 (v2.1)
+
+- **英文界面**：主窗口的地球按钮或菜单栏里随时切换中英文，已打开的窗口立即更新。新安装跟随系统语言，从 2.0 升级的保持中文。
+- 语音输入目前仍只支持普通话。
+- **许可证**：从 v2.1 起改用 PolyForm Noncommercial 1.0.0 非商业许可（见[许可证](#许可证)）。
 
 ### 更新日志 (v2.0)
 
@@ -300,4 +321,10 @@ Sources/Tick/
 
 ### 许可证
 
-MIT
+[PolyForm Noncommercial 1.0.0](LICENSE)（非商业许可），版权所有 (c) 2026 青澈君。
+
+- **非商业用途免费**：个人使用、学习、研究、业余项目，以及公益组织、学校、公共机构使用都可以；也可以修改和分享，但必须保留许可证和版权声明。
+- **未经授权禁止商用**：包括售卖 Tick 或其修改版、把它打包进收费的产品或服务、在公司内用于经营目的等。
+- 如需商业授权，请在 GitHub 上提 Issue 联系。
+
+v2.0 及之前的版本以 MIT 协议发布，这些版本仍适用 MIT；从 v2.1 起改用非商业许可。

@@ -126,14 +126,14 @@ private var chinese: Calendar {
     return cal
 }
 
-private func testDaysSummary() {
+private func testDaysSummary() { with(.zh) {
     func summary(_ days: Set<Int>) -> String { reminder(23, 0, weekdays: days).daysSummary(calendar: chinese) }
     expect(summary(DailyReminder.everyDay) == "每天", "all seven days")
     expect(summary([2, 3, 4, 5, 6]) == "工作日", "Mon–Fri")
     expect(summary([1, 7]) == "周末", "Sat + Sun")
     expect(summary([]) == "从不", "no days")
     expect(summary([6, 2, 4]) == "周一 周三 周五", "others listed in week order, got \(summary([6, 2, 4]))")
-}
+} }
 
 // MARK: - Snooze
 

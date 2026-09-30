@@ -36,12 +36,12 @@ final class SpeechCapture {
     static func requestPermissions(_ completion: @escaping @MainActor (String?) -> Void) {
         SFSpeechRecognizer.requestAuthorization { status in
             guard status == .authorized else {
-                Task { @MainActor in completion("没有语音识别权限，请在 系统设置 → 隐私与安全性 → 语音识别 中允许 Tick。") }
+                Task { @MainActor in completion(L("没有语音识别权限，请在 系统设置 → 隐私与安全性 → 语音识别 中允许 Tick。", "Tick needs Speech Recognition access. Allow it in System Settings → Privacy & Security → Speech Recognition.")) }
                 return
             }
             AVCaptureDevice.requestAccess(for: .audio) { granted in
                 Task { @MainActor in
-                    completion(granted ? nil : "没有麦克风权限，请在 系统设置 → 隐私与安全性 → 麦克风 中允许 Tick。")
+                    completion(granted ? nil : L("没有麦克风权限，请在 系统设置 → 隐私与安全性 → 麦克风 中允许 Tick。", "Tick needs Microphone access. Allow it in System Settings → Privacy & Security → Microphone."))
                 }
             }
         }
@@ -51,7 +51,7 @@ final class SpeechCapture {
         guard finished else { return }  // a second installTap on the same bus crashes
 
         guard let recognizer, recognizer.isAvailable else {
-            onError?("语音识别暂时不可用，请检查网络或稍后再试。")
+            onError?(L("语音识别暂时不可用，请检查网络或稍后再试。", "Speech recognition isn't available right now. Check your network or try again later."))
             return
         }
 
@@ -59,7 +59,7 @@ final class SpeechCapture {
         let format = engine.inputNode.outputFormat(forBus: 0)
         // No microphone (e.g. Mac mini with nothing attached) or input switching: installTap would crash
         guard format.sampleRate > 0, format.channelCount > 0 else {
-            onError?("没有找到可用的麦克风。")
+            onError?(L("没有找到可用的麦克风。", "No microphone found."))
             return
         }
 
@@ -76,7 +76,7 @@ final class SpeechCapture {
             try engine.start()
         } catch {
             engine.inputNode.removeTap(onBus: 0)
-            onError?("无法打开麦克风：\(error.localizedDescription)")
+            onError?(L("无法打开麦克风：", "Couldn't open the microphone: ") + error.localizedDescription)
             return
         }
 
@@ -107,7 +107,7 @@ final class SpeechCapture {
                 } else if let message {
                     // Heard something: keep it. Heard nothing: say why (e.g. Siri/dictation turned off)
                     if self.transcript.isEmpty {
-                        self.fail("语音识别出错：\(message)")
+                        self.fail(L("语音识别出错：", "Speech recognition error: ") + message)
                     } else {
                         self.finish()
                     }

@@ -48,8 +48,8 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     func sendTimerComplete(note: String = "") {
         // System notification as backup
         let content = UNMutableNotificationContent()
-        content.title = "时间到！"
-        content.body = note.isEmpty ? "倒计时已结束。" : note
+        content.title = L("时间到！", "Time's up!")
+        content.body = note.isEmpty ? L("倒计时已结束。", "Your countdown has finished.") : note
         content.sound = .default
 
         let request = UNNotificationRequest(

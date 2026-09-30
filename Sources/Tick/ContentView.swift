@@ -32,7 +32,7 @@ struct ContentView: View {
                     HStack(spacing: 4) {
                         Image(systemName: launchAtLogin ? "sunrise.fill" : "sunrise")
                             .font(.system(size: 12, weight: .medium))
-                        Text("开机自启")
+                        Text(L("开机自启", "Auto-start"))
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(launchAtLogin ? .orange : .secondary)
@@ -44,11 +44,13 @@ struct ContentView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .help("登录时自动启动")
+                .help(L("登录时自动启动", "Launch at login"))
 
                 Spacer()
 
                 reminderButton
+
+                languageButton
 
                 Button {
                     alwaysOnTop.toggle()
@@ -58,7 +60,7 @@ struct ContentView: View {
                     HStack(spacing: 4) {
                         Image(systemName: alwaysOnTop ? "pin.fill" : "pin")
                             .font(.system(size: 12, weight: .medium))
-                        Text(alwaysOnTop ? "已置顶" : "置顶")
+                        Text(alwaysOnTop ? L("已置顶", "Pinned") : L("置顶", "Pin"))
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(alwaysOnTop ? .accentColor : .secondary)
@@ -70,7 +72,7 @@ struct ContentView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .help("窗口置顶")
+                .help(L("窗口置顶", "Keep window on top"))
             }
             .padding(.top, 8)
             .padding(.horizontal, 20)
@@ -140,7 +142,7 @@ struct ContentView: View {
             HStack(spacing: 4) {
                 Image(systemName: upcoming != nil ? "moon.fill" : "moon")
                     .font(.system(size: 12, weight: .medium))
-                Text(upcoming?.reminder.timeLabel ?? "提醒")
+                Text(upcoming?.reminder.timeLabel ?? L("提醒", "Reminders"))
                     .font(.system(size: 11, weight: .medium))
             }
             .foregroundColor(upcoming != nil ? .indigo : .secondary)
@@ -152,7 +154,32 @@ struct ContentView: View {
             )
         }
         .buttonStyle(.plain)
-        .help("每日提醒")
+        .help(L("每日提醒", "Daily reminders"))
+    }
+
+    // MARK: - Language Button
+
+    /// Shows the language it switches to, so it's findable by someone who can't read the current one
+    private var languageButton: some View {
+        Button {
+            LanguageStore.shared.toggle()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "globe")
+                    .font(.system(size: 12, weight: .medium))
+                Text(L("EN", "中文"))
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color.secondary.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
+        .help(L("Switch to English", "切换到中文"))
     }
 
     // MARK: - Preset Buttons
@@ -162,7 +189,7 @@ struct ContentView: View {
     private var presetButtons: some View {
         HStack(spacing: 10) {
             ForEach(presetStore.presets) { preset in
-                Button(preset.label) {
+                Button(preset.displayLabel) {
                     selectedPreset = preset
                     inputMinutes = String(preset.minutes)
                     inputSeconds = "0"
@@ -182,14 +209,14 @@ struct ContentView: View {
             .buttonStyle(.bordered)
             .controlSize(.large)
             .disabled(timer.timerState != .idle)
-            .help("编辑预设")
+            .help(L("编辑预设", "Edit presets"))
         }
     }
 
     // MARK: - Note Input
 
     private var noteInput: some View {
-        TextField("备注（可选）", text: $inputNote)
+        TextField(L("备注（可选）", "Note (optional)"), text: $inputNote)
             .textFieldStyle(.roundedBorder)
             .frame(width: 130)
             .multilineTextAlignment(.center)
@@ -232,15 +259,16 @@ struct ContentView: View {
             switch timer.timerState {
             case .idle:
                 if timer.hasLastTimer {
-                    Button("重复") {
+                    Button(L("重复", "Repeat")) {
                         timer.repeatLast()
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .help("重复 \(timer.lastMinutes) 分\(timer.lastSeconds > 0 ? " \(timer.lastSeconds) 秒" : "")")
+                    .help(L("重复 \(timer.lastMinutes) 分\(timer.lastSeconds > 0 ? " \(timer.lastSeconds) 秒" : "")",
+                             "Repeat \(timer.lastMinutes) min\(timer.lastSeconds > 0 ? " \(timer.lastSeconds) sec" : "")"))
                 }
 
-                Button("开始") {
+                Button(L("开始", "Start")) {
                     startFromInput()
                 }
                 .buttonStyle(.borderedProminent)
@@ -249,14 +277,14 @@ struct ContentView: View {
                 .help("⏎ Return")
 
             case .running:
-                Button("暂停") {
+                Button(L("暂停", "Pause")) {
                     timer.pause()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .help("␣ Space")
 
-                Button("取消") {
+                Button(L("取消", "Cancel")) {
                     timer.cancel()
                 }
                 .buttonStyle(.bordered)
@@ -265,14 +293,14 @@ struct ContentView: View {
                 .help("⎋ Escape")
 
             case .paused:
-                Button("继续") {
+                Button(L("继续", "Resume")) {
                     timer.resume()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .help("␣ Space")
 
-                Button("取消") {
+                Button(L("取消", "Cancel")) {
                     timer.cancel()
                 }
                 .buttonStyle(.bordered)
@@ -291,9 +319,9 @@ struct ContentView: View {
 
     private var shortcutHint: String {
         if timer.timerState != .idle {
-            return "Space 暂停/继续 · Esc 取消"
+            return L("Space 暂停/继续 · Esc 取消", "Space pause/resume · Esc cancel")
         }
-        return "Return 开始"
+        return L("Return 开始", "Press Return to start")
     }
 
     private var idleTimeString: String {
@@ -356,6 +384,18 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Language Root
+
+/// Rebuilds its content when the UI language changes, so every nested L(...) is re-read
+struct LanguageRoot<Content: View>: View {
+    @ObservedObject private var languages = LanguageStore.shared
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        content().id(languages.language)
+    }
+}
+
 // MARK: - Preset Editor
 
 struct PresetEditorView: View {
@@ -368,17 +408,17 @@ struct PresetEditorView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("编辑预设")
+            Text(L("编辑预设", "Edit presets"))
                 .font(.headline)
 
             List {
                 ForEach($editingPresets) { $preset in
                     HStack(spacing: 12) {
-                        TextField("名称", text: $preset.label)
+                        TextField(L("名称", "Name"), text: $preset.label)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
 
-                        TextField("分钟", text: Binding(
+                        TextField(L("分钟", "min"), text: Binding(
                             get: { String(preset.minutes) },
                             set: { preset.minutes = Int($0).map { min(max($0, 1), 999) } ?? preset.minutes }
                         ))
@@ -386,7 +426,7 @@ struct PresetEditorView: View {
                         .frame(width: 50)
                         .multilineTextAlignment(.center)
 
-                        Text("分钟")
+                        Text(L("分钟", "min"))
                             .foregroundStyle(.secondary)
                             .font(.system(size: 12))
 
@@ -409,16 +449,16 @@ struct PresetEditorView: View {
 
             if editingPresets.count < TimerPreset.maxCount {
                 HStack(spacing: 8) {
-                    TextField("名称", text: $newLabel)
+                    TextField(L("名称", "Name"), text: $newLabel)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 80)
 
-                    TextField("分钟", text: $newMinutes)
+                    TextField(L("分钟", "min"), text: $newMinutes)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 50)
                         .multilineTextAlignment(.center)
 
-                    Button("添加") {
+                    Button(L("添加", "Add")) {
                         if let mins = Int(newMinutes), mins > 0, !newLabel.isEmpty {
                             editingPresets.append(TimerPreset(label: newLabel, minutes: min(mins, 999)))
                             newLabel = ""
@@ -430,18 +470,18 @@ struct PresetEditorView: View {
             }
 
             HStack(spacing: 12) {
-                Button("恢复默认") {
+                Button(L("恢复默认", "Restore Defaults")) {
                     editingPresets = TimerPreset.builtIn
                 }
                 .foregroundStyle(.secondary)
 
                 Spacer()
 
-                Button("取消") {
+                Button(L("取消", "Cancel")) {
                     dismiss()
                 }
 
-                Button("保存") {
+                Button(L("保存", "Save")) {
                     store.presets = editingPresets
                     dismiss()
                 }
@@ -452,7 +492,12 @@ struct PresetEditorView: View {
         .padding(20)
         .frame(width: 340)
         .onAppear {
-            editingPresets = store.presets
+            // Show auto-generated labels ("25 分钟" / "25 min") in the current language
+            editingPresets = store.presets.map { preset in
+                var preset = preset
+                preset.label = preset.displayLabel
+                return preset
+            }
         }
     }
 }

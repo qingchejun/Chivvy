@@ -162,13 +162,13 @@ final class ReminderScheduler: ObservableObject {
         let panel = alertPanels[reminder.id] ?? AlertPanel()
         alertPanels[reminder.id] = panel
         panel.show(
-            title: snoozeCount > 0 ? "稍后提醒 · \(reminder.timeLabel)" : "\(reminder.timeLabel) 到了",
+            title: snoozeCount > 0 ? Self.snoozedTitle(reminder) : Self.dueTitle(reminder),
             note: Self.body(for: reminder),
             footnote: !state.canSnoozeAgain
-                ? "已推迟 \(snoozeCount) 次，不能再推迟了"
-                : (snoozeCount > 0 ? "已推迟 \(snoozeCount)/\(SnoozeState.maxCount) 次" : nil),
+                ? L("已推迟 \(snoozeCount) 次，不能再推迟了", "Snoozed \(snoozeCount) times. No more snoozing.")
+                : (snoozeCount > 0 ? L("已推迟 \(snoozeCount)/\(SnoozeState.maxCount) 次", "Snoozed \(snoozeCount)/\(SnoozeState.maxCount)") : nil),
             secondaryActions: options.map { minutes in
-                AlertAction(label: "\(minutes) 分钟后") { [weak self] in
+                AlertAction(label: L("\(minutes) 分钟后", "In \(minutes) min")) { [weak self] in
                     self?.scheduleSnooze(reminder.id, minutes: minutes, count: snoozeCount + 1)
                 }
             }
@@ -176,8 +176,16 @@ final class ReminderScheduler: ObservableObject {
         clearDeliveredNotifications(for: reminder)
     }
 
+    private static func dueTitle(_ reminder: DailyReminder) -> String {
+        L("\(reminder.timeLabel) 到了", "It's \(reminder.timeLabel)")
+    }
+
+    private static func snoozedTitle(_ reminder: DailyReminder) -> String {
+        L("稍后提醒 · \(reminder.timeLabel)", "Snoozed · \(reminder.timeLabel)")
+    }
+
     private static func body(for reminder: DailyReminder) -> String {
-        reminder.note.isEmpty ? "每日提醒" : reminder.note
+        reminder.note.isEmpty ? L("每日提醒", "Daily reminder") : reminder.note
     }
 
     // MARK: - Snooze
@@ -193,14 +201,19 @@ final class ReminderScheduler: ObservableObject {
         armSnoozeTimer(state)
 
         // Backup in case Tick quits before the snooze is due
+        addSnoozeBackup(for: reminder, after: TimeInterval(minutes * 60))
+    }
+
+    /// Adding with the same identifier replaces an existing backup
+    private func addSnoozeBackup(for reminder: DailyReminder, after interval: TimeInterval) {
         let content = UNMutableNotificationContent()
-        content.title = "稍后提醒 · \(reminder.timeLabel)"
+        content.title = Self.snoozedTitle(reminder)
         content.body = Self.body(for: reminder)
         content.sound = .default
         let request = UNNotificationRequest(
-            identifier: Self.snoozePrefix + id.uuidString,
+            identifier: Self.snoozePrefix + reminder.id.uuidString,
             content: content,
-            trigger: UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(minutes * 60), repeats: false)
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
         )
         UNUserNotificationCenter.current().add(request)
     }
@@ -262,7 +275,7 @@ final class ReminderScheduler: ObservableObject {
 
         for reminder in new where reminder.isEnabled {
             let content = UNMutableNotificationContent()
-            content.title = "\(reminder.timeLabel) 到了"
+            content.title = Self.dueTitle(reminder)
             content.body = Self.body(for: reminder)
             content.sound = .default
 
@@ -284,6 +297,17 @@ final class ReminderScheduler: ObservableObject {
                     }
                 }
             }
+        }
+    }
+
+    /// Re-adds pending system notifications so their text matches the new UI language
+    func languageDidChange() {
+        syncSystemNotifications(old: store.reminders, new: store.reminders)
+        for state in snoozes.values {
+            guard let reminder = store.reminders.first(where: { $0.id == state.reminderID && $0.isEnabled }) else { continue }
+            let remaining = state.fireDate.timeIntervalSinceNow
+            guard remaining > 1 else { continue }
+            addSnoozeBackup(for: reminder, after: remaining)
         }
     }
 

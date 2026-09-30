@@ -28,10 +28,18 @@ func date(_ y: Int, _ mo: Int, _ d: Int, _ h: Int, _ mi: Int, _ s: Int = 0, cal:
     cal.date(from: DateComponents(year: y, month: mo, day: d, hour: h, minute: mi, second: s))!
 }
 
+/// Runs `body` with the UI language set, then restores whatever was saved before
+func with(_ language: AppLanguage, _ body: () -> Void) {
+    let saved = UserDefaults.standard.string(forKey: L10n.key)
+    L10n.current = language
+    body()
+    UserDefaults.standard.set(saved, forKey: L10n.key)
+}
+
 @main
 enum TestRunner {
     static func main() {
-        for (name, test) in scheduleTests + parserTests + hotKeyTests {
+        for (name, test) in scheduleTests + parserTests + hotKeyTests + localizationTests {
             let before = failures
             test()
             print(failures == before ? "✓ \(name)" : "✗ \(name)")

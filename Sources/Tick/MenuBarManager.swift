@@ -86,7 +86,7 @@ final class MenuBarManager: NSObject {
             button.contentTintColor = nil
 
         case .paused:
-            button.image = NSImage(systemSymbolName: "pause.circle", accessibilityDescription: "已暂停")
+            button.image = NSImage(systemSymbolName: "pause.circle", accessibilityDescription: L("已暂停", "Paused"))
             button.title = " \(timerManager.formattedTime)"
             button.font = NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)
         }
@@ -140,8 +140,23 @@ struct MenuBarPopoverView: View {
                     return
                 }
             } label: {
-                Text("打开 Tick")
+                Text(L("打开 Tick", "Open Tick"))
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+
+            Button {
+                LanguageStore.shared.toggle()
+                dismiss()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 11))
+                    Text(L("Switch to English", "切换到中文"))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 16)
@@ -151,7 +166,7 @@ struct MenuBarPopoverView: View {
                 NSApp.terminate(nil)
             } label: {
                 HStack {
-                    Text("退出 Tick")
+                    Text(L("退出 Tick", "Quit Tick"))
                     Spacer()
                     Text("⌘Q")
                         .foregroundColor(.secondary)
@@ -200,7 +215,7 @@ struct MenuBarPopoverView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "mic")
                         .font(.system(size: 11))
-                    Text("语音添加提醒")
+                    Text(L("语音添加提醒", "Add by Voice…"))
                     Spacer()
                     Text(VoiceReminderController.shared.hotKeyCombo.label)
                         .foregroundColor(.secondary)
@@ -219,7 +234,7 @@ struct MenuBarPopoverView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "moon")
                         .font(.system(size: 11))
-                    Text(reminderStore.reminders.isEmpty ? "添加每日提醒…" : "管理提醒…")
+                    Text(reminderStore.reminders.isEmpty ? L("添加每日提醒…", "Add Daily Reminder…") : L("管理提醒…", "Manage Reminders…"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -242,7 +257,7 @@ struct MenuBarPopoverView: View {
                     HStack {
                         Image(systemName: "arrow.counterclockwise")
                             .font(.system(size: 11))
-                        Text("重复上次")
+                        Text(L("重复上次", "Repeat Last"))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -260,7 +275,7 @@ struct MenuBarPopoverView: View {
                     noteText = ""
                     dismiss()
                 } label: {
-                    Text("开始 \(preset.label)")
+                    Text(L("开始 \(preset.displayLabel)", "Start \(preset.displayLabel)"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -272,7 +287,7 @@ struct MenuBarPopoverView: View {
                 .padding(.vertical, 4)
 
             HStack {
-                TextField("备注（可选）", text: $noteText)
+                TextField(L("备注（可选）", "Note (optional)"), text: $noteText)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 12))
                     .frame(width: 120)
@@ -282,7 +297,7 @@ struct MenuBarPopoverView: View {
             .padding(.vertical, 4)
 
             HStack(spacing: 8) {
-                TextField("自定义", text: $customMinutes)
+                TextField(L("自定义", "Custom"), text: $customMinutes)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 70)
                     .multilineTextAlignment(.center)
@@ -300,7 +315,7 @@ struct MenuBarPopoverView: View {
                         }
                     }
 
-                Text("分钟")
+                Text(L("分钟", "min"))
                     .foregroundColor(.secondary)
                     .font(.system(size: 12))
 
@@ -332,7 +347,7 @@ struct MenuBarPopoverView: View {
                     timerManager.pause()
                     dismiss()
                 } label: {
-                    Text("暂停")
+                    Text(L("暂停", "Pause"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -343,7 +358,7 @@ struct MenuBarPopoverView: View {
                     timerManager.resume()
                     dismiss()
                 } label: {
-                    Text("继续")
+                    Text(L("继续", "Resume"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -355,7 +370,7 @@ struct MenuBarPopoverView: View {
                 timerManager.cancel()
                 dismiss()
             } label: {
-                Text("取消")
+                Text(L("取消", "Cancel"))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
