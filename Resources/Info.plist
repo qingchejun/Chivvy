@@ -22,6 +22,10 @@
     <false/>
     <key>NSUserNotificationAlertStyle</key>
     <string>alert</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>用于语音添加提醒：按快捷键后说出提醒或倒计时。</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>把你说的话转成文字，自动生成提醒。</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
 </dict>

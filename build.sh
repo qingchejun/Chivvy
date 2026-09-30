@@ -12,11 +12,11 @@ if [ "$ARCH" = "universal" ]; then
 
     swiftc $SOURCES -o Tick_arm64 -sdk "$SDK" \
         -target arm64-apple-macosx13.0 \
-        -framework SwiftUI -framework AppKit -framework UserNotifications -O
+        -framework SwiftUI -framework AppKit -framework UserNotifications -framework Speech -framework AVFoundation -framework Carbon -O
 
     swiftc $SOURCES -o Tick_x86_64 -sdk "$SDK" \
         -target x86_64-apple-macosx13.0 \
-        -framework SwiftUI -framework AppKit -framework UserNotifications -O
+        -framework SwiftUI -framework AppKit -framework UserNotifications -framework Speech -framework AVFoundation -framework Carbon -O
 
     lipo -create Tick_arm64 Tick_x86_64 -output Tick_binary
     rm -f Tick_arm64 Tick_x86_64
@@ -25,7 +25,7 @@ else
 
     swiftc $SOURCES -o Tick_binary -sdk "$SDK" \
         -target "${ARCH}-apple-macosx13.0" \
-        -framework SwiftUI -framework AppKit -framework UserNotifications -O
+        -framework SwiftUI -framework AppKit -framework UserNotifications -framework Speech -framework AVFoundation -framework Carbon -O
 fi
 
 APP="/Applications/Tick.app"

@@ -197,6 +197,25 @@ struct MenuBarPopoverView: View {
 
             Button {
                 dismiss()
+                VoiceReminderController.shared.beginListening()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "mic")
+                        .font(.system(size: 11))
+                    Text("语音添加提醒")
+                    Spacer()
+                    Text(VoiceReminderController.shared.hotKeyCombo.label)
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 12))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+
+            Button {
+                dismiss()
                 ReminderWindow.shared.show()
             } label: {
                 HStack(spacing: 6) {

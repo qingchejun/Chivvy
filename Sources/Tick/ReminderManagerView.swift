@@ -115,6 +115,12 @@ struct ReminderManagerView: View {
             }
             Spacer()
             Button {
+                VoiceReminderController.shared.beginListening()
+            } label: {
+                Label("语音添加", systemImage: "mic")
+            }
+            .help("也可以在任何地方按 \(VoiceReminderController.shared.hotKeyCombo.label)")
+            Button {
                 editing = DailyReminder(hour: 23, minute: 0)
             } label: {
                 Label("新建", systemImage: "plus")
@@ -201,6 +207,14 @@ struct ReminderManagerView: View {
         VStack(spacing: 8) {
             if loginStatus != .enabled && enabledCount > 0 {
                 loginHint
+            }
+
+            HStack(spacing: 8) {
+                Text("语音添加快捷键")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                ShortcutRecorder(controller: .shared)
+                Spacer()
             }
 
             HStack(spacing: 8) {
@@ -338,6 +352,109 @@ private struct ReminderEditSheet: View {
         _draft = State(initialValue: reminder)
     }
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(isNew ? "新建提醒" : "编辑提醒")
+                .font(.headline)
+
+            ReminderForm(draft: $draft)
+
+            HStack {
+                Spacer()
+                Button("取消") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("保存") {
+                    onSave(draft)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(draft.weekdays.isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 380)
+    }
+}
+
+// MARK: - Shortcut Recorder
+
+/// Click, then press a new combination (Esc cancels)
+private struct ShortcutRecorder: View {
+    @ObservedObject var controller: VoiceReminderController
+    @State private var isRecording = false
+    @State private var monitor: Any?
+    @State private var message: String?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                isRecording ? stopRecording() : startRecording()
+            } label: {
+                Text(isRecording ? "请按下新的快捷键…" : controller.hotKeyCombo.label)
+                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .frame(minWidth: 90)
+            }
+            .controlSize(.small)
+            .help("点击后按下新的组合键，需包含 ⌃ 或 ⌥；按 Esc 取消")
+
+            if isRecording {
+                Button("恢复默认") {
+                    apply(.defaultVoiceReminder)
+                }
+                .controlSize(.small)
+            }
+
+            if let message {
+                Text(message)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+            }
+        }
+        .onDisappear { stopRecording() }
+    }
+
+    private func startRecording() {
+        message = nil
+        isRecording = true
+        controller.suspendHotKey()
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            if event.keyCode == 53 { // Esc
+                stopRecording()
+                return nil
+            }
+            if let combo = HotKeyCombo(event: event) {
+                apply(combo)
+            } else {
+                message = "需要同时按住 ⌃ 或 ⌥"
+            }
+            return nil
+        }
+    }
+
+    private func apply(_ combo: HotKeyCombo) {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+        isRecording = false
+        message = controller.setHotKey(combo) ? nil : "\(combo.label) 无法使用（可能被系统保留），换一个吧"
+    }
+
+    private func stopRecording() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+        if isRecording {
+            isRecording = false
+            controller.resumeHotKey()
+        }
+    }
+}
+
+// MARK: - Reminder Form
+
+/// Time, note and repeat days; shared by the edit sheet and the voice confirm card
+struct ReminderForm: View {
+    @Binding var draft: DailyReminder
+
     private var calendar: Calendar { .current }
 
     private var time: Binding<Date> {
@@ -356,10 +473,7 @@ private struct ReminderEditSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(isNew ? "新建提醒" : "编辑提醒")
-                .font(.headline)
-
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 DatePicker("", selection: time, displayedComponents: .hourAndMinute)
                     .labelsHidden()
@@ -377,29 +491,14 @@ private struct ReminderEditSheet: View {
                     quickDays("每天", DailyReminder.everyDay)
                     quickDays("工作日", DailyReminder.weekdaysOnly)
                     quickDays("周末", DailyReminder.weekendsOnly)
+                    if draft.weekdays.isEmpty {
+                        Text("至少选择一天")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.orange)
+                    }
                 }
-            }
-
-            HStack {
-                if draft.weekdays.isEmpty {
-                    Text("至少选择一天")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.orange)
-                }
-                Spacer()
-                Button("取消") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button("保存") {
-                    onSave(draft)
-                    dismiss()
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(draft.weekdays.isEmpty)
             }
         }
-        .padding(20)
-        .frame(width: 380)
     }
 
     private func dayChip(_ weekday: Int) -> some View {

@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBarManager = MenuBarManager(timerManager: TimerManager.shared)
         NotificationManager.shared.requestPermission()
         ReminderScheduler.shared.start()
+        VoiceReminderController.shared.start()
 
         NotificationCenter.default.addObserver(
             self,

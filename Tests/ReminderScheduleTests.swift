@@ -1,33 +1,5 @@
 import Foundation
 
-// Minimal test harness: SwiftPM in Command Line Tools can't link manifests,
-// so tests compile together with the logic files via Tests/run.sh.
-
-private var failures = 0
-private var passed = 0
-
-private func expect(_ condition: @autoclosure () -> Bool, _ message: String, line: Int = #line) {
-    if condition() {
-        passed += 1
-    } else {
-        failures += 1
-        print("  ✗ line \(line): \(message)")
-    }
-}
-
-private func calendar(_ tz: String) -> Calendar {
-    var cal = Calendar(identifier: .gregorian)
-    cal.timeZone = TimeZone(identifier: tz)!
-    return cal
-}
-
-private let shanghai = calendar("Asia/Shanghai")
-
-/// Build a date in the given calendar: date(2026, 9, 30, 22, 0)
-private func date(_ y: Int, _ mo: Int, _ d: Int, _ h: Int, _ mi: Int, _ s: Int = 0, cal: Calendar = shanghai) -> Date {
-    cal.date(from: DateComponents(year: y, month: mo, day: d, hour: h, minute: mi, second: s))!
-}
-
 private func reminder(_ h: Int, _ m: Int, weekdays: Set<Int> = DailyReminder.everyDay, enabled: Bool = true) -> DailyReminder {
     DailyReminder(hour: h, minute: m, note: "", weekdays: weekdays, isEnabled: enabled)
 }
@@ -208,39 +180,27 @@ private func testTimeLabel() {
     expect(reminder(7, 5).timeLabel == "07:05", "zero-padded HH:mm")
 }
 
-@main
-enum TestRunner {
-    static func main() {
-        let tests: [(String, () -> Void)] = [
-            ("nextFireLaterToday", testNextFireLaterToday),
-            ("nextFireRollsToTomorrow", testNextFireRollsToTomorrow),
-            ("nextFireIsStrictlyAfter", testNextFireIsStrictlyAfter),
-            ("nextFireRespectsWeekdays", testNextFireRespectsWeekdays),
-            ("disabledOrNoWeekdaysNeverFires", testDisabledOrNoWeekdaysNeverFires),
-            ("nextFireAcrossDSTGap", testNextFireAcrossDSTGap),
-            ("scheduleNextPicksEarliest", testScheduleNextPicksEarliest),
-            ("dueOnTime", testDueOnTime),
-            ("dueNotYet", testDueNotYet),
-            ("dueAfterShortSleepWithinGrace", testDueAfterShortSleepWithinGrace),
-            ("dueAfterLongSleepSkipped", testDueAfterLongSleepSkipped),
-            ("dueAfterMultiDaySleepUsesLatestOccurrence", testDueAfterMultiDaySleepUsesLatestOccurrence),
-            ("dueSortedByOccurrenceNotArrayOrder", testDueSortedByOccurrenceNotArrayOrder),
-            ("dueLooksForwardFromLastCheck", testDueLooksForwardFromLastCheck),
-            ("daysSummary", testDaysSummary),
-            ("snoozeLimit", testSnoozeLimit),
-            ("snoozeRestoreFuture", testSnoozeRestoreFuture),
-            ("snoozeRestoreJustMissed", testSnoozeRestoreJustMissed),
-            ("snoozeRestoreStale", testSnoozeRestoreStale),
-            ("snoozeCodable", testSnoozeCodable),
-            ("codableRoundTrip", testCodableRoundTrip),
-            ("timeLabel", testTimeLabel),
-        ]
-        for (name, test) in tests {
-            let before = failures
-            test()
-            print(failures == before ? "✓ \(name)" : "✗ \(name)")
-        }
-        print("\n\(passed) assertions passed, \(failures) failed")
-        exit(failures == 0 ? 0 : 1)
-    }
-}
+let scheduleTests: [(String, () -> Void)] = [
+    ("nextFireLaterToday", testNextFireLaterToday),
+    ("nextFireRollsToTomorrow", testNextFireRollsToTomorrow),
+    ("nextFireIsStrictlyAfter", testNextFireIsStrictlyAfter),
+    ("nextFireRespectsWeekdays", testNextFireRespectsWeekdays),
+    ("disabledOrNoWeekdaysNeverFires", testDisabledOrNoWeekdaysNeverFires),
+    ("nextFireAcrossDSTGap", testNextFireAcrossDSTGap),
+    ("scheduleNextPicksEarliest", testScheduleNextPicksEarliest),
+    ("dueOnTime", testDueOnTime),
+    ("dueNotYet", testDueNotYet),
+    ("dueAfterShortSleepWithinGrace", testDueAfterShortSleepWithinGrace),
+    ("dueAfterLongSleepSkipped", testDueAfterLongSleepSkipped),
+    ("dueAfterMultiDaySleepUsesLatestOccurrence", testDueAfterMultiDaySleepUsesLatestOccurrence),
+    ("dueSortedByOccurrenceNotArrayOrder", testDueSortedByOccurrenceNotArrayOrder),
+    ("dueLooksForwardFromLastCheck", testDueLooksForwardFromLastCheck),
+    ("daysSummary", testDaysSummary),
+    ("snoozeLimit", testSnoozeLimit),
+    ("snoozeRestoreFuture", testSnoozeRestoreFuture),
+    ("snoozeRestoreJustMissed", testSnoozeRestoreJustMissed),
+    ("snoozeRestoreStale", testSnoozeRestoreStale),
+    ("snoozeCodable", testSnoozeCodable),
+    ("codableRoundTrip", testCodableRoundTrip),
+    ("timeLabel", testTimeLabel),
+]
