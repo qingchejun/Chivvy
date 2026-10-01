@@ -4,193 +4,7 @@
 
 <p align="center"><b><a href="https://qingchejun.github.io/Chivvy/">Website · 产品主页</a></b></p>
 
-<p align="center"><a href="#english">English</a> | <a href="#中文">中文</a></p>
-
----
-
-## English
-
-Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily pop-up reminders, with voice input. The interface is available in English and Chinese.
-
-*chivvy* /ˈtʃɪvi/: to keep telling someone to do something until they do it. That's what the alert does: it floats over everything, including full-screen apps, and only lets you snooze a few times.
-
-<p align="center">
-  <img src="screenshots/main-en.png" width="400" alt="Countdown">
-  <img src="screenshots/reminders-en.png" width="400" alt="Daily reminders">
-  <img src="screenshots/settings-en.png" width="400" alt="Settings">
-</p>
-
-### Features
-
-**Countdown**
-- Circular progress ring, preset buttons (editable, up to 5) and custom minutes + seconds
-- Optional note, shown again when time is up
-- Live countdown in the menu bar and on the Dock badge
-- Repeat the last timer with one click
-- Keyboard: Space pause / resume, Esc cancel, Return start
-
-**Daily reminders**
-- Up to 8 reminders, each repeating on the weekdays you pick (every day, weekdays, weekends, or any mix)
-- The alert floats above everything, including full-screen apps, and plays a sound until you dismiss it (auto-stops after 45 s)
-- Snooze 5 or 10 minutes, at most 3 times per reminder
-- If the Mac was asleep at reminder time, the reminder still shows on wake if it's less than 30 minutes late
-- If Chivvy isn't running, macOS delivers a regular notification instead
-- A Reminders section in the main window to see them all at a glance, turn them on / off, edit, and batch on / off / delete
-
-**Voice input**
-- Press **⌃⌘R** anywhere and say one sentence in Chinese:
-  - a relative time ("一分钟后提醒我睡觉") starts a countdown right away
-  - a time of day ("工作日早上八点半提醒我喝水") opens a confirm card, then saves a daily reminder
-- The shortcut can be changed in Settings
-
-**Menu bar**
-- Quick-start presets or custom minutes with a note
-- See every reminder and toggle it on / off
-- The running countdown with pause / cancel, plus voice input and reminders one click away
-
-**Other**
-- One main window with a sidebar: Countdown, Daily reminders, Settings
-- Follows the system's light / dark appearance
-- English / Chinese interface, switched in Settings or from the menu bar. It follows your system language on first launch.
-- Always on top, launch at login
-
-### Screenshots
-
-| Reminder alert | Voice input |
-|:---:|:---:|
-| <img src="screenshots/alert-en.png" width="300" alt="Reminder alert"> | <img src="screenshots/voice-en.png" width="300" alt="Voice confirm card"> |
-
-### Voice Examples
-
-| You say | Chivvy does |
-|---|---|
-| 一分钟后提醒我睡觉 | 1-minute countdown, note "睡觉" |
-| 半小时后叫我起来 | 30-minute countdown, note "起来" |
-| 倒计时 25 分钟 | 25-minute countdown |
-| 每天晚上十一点提醒我睡觉 | Daily reminder at 23:00, every day, note "睡觉" |
-| 工作日早上八点半提醒我喝水 | Daily reminder at 08:30, Mon–Fri, note "喝水" |
-| 每周一三五晚上九点去跑步 | Daily reminder at 21:00, Mon / Wed / Fri, note "去跑步" |
-
-Speech is turned into text by macOS's built-in speech recognition, on-device when the Chinese model is available. Chivvy then works out the time, days and note with its own rules. Nothing is sent to a third-party service.
-
-A countdown starts right away, and Chivvy asks first if one is already running. A daily reminder always opens a confirm card, so you can fix anything that was misheard.
-
-### Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| Space | Pause / resume the countdown |
-| Esc | Cancel the countdown |
-| Return | Start the countdown |
-| ⌃⌘R | Voice input, from any app (customizable) |
-
-### Install
-
-Download `Chivvy.dmg` from [Releases](https://github.com/qingchejun/Chivvy/releases) and drag `Chivvy.app` to `/Applications`. If the latest version isn't there yet, build from source (below).
-
-### Build from Source
-
-```bash
-git clone https://github.com/qingchejun/Chivvy.git
-cd Chivvy
-./build.sh            # Apple Silicon
-./build.sh universal  # Apple Silicon + Intel
-open /Applications/Chivvy.app
-```
-
-Requires macOS 13+ and Xcode Command Line Tools. The full Xcode app isn't needed.
-
-### Permissions
-
-| Permission | Why | When it's asked |
-|---|---|---|
-| Notifications | Backup alert when Chivvy isn't running | First launch |
-| Microphone | Voice input | First time you press ⌃⌘R |
-| Speech Recognition | Turn speech into text | First time you press ⌃⌘R |
-| Login Items (optional) | Keep reminders working after a restart | When you turn on Auto-start |
-
-### Development
-
-```
-Sources/Chivvy/
-├── ChivvyApp.swift, AppDelegate.swift  App entry, menu bar setup
-├── MainView.swift, MainSection.swift   Main window: sidebar and sections
-├── TimerPane.swift                     Countdown section, preset editor
-├── RemindersPane.swift                 Reminders section, edit sheet
-├── SettingsPane.swift                  Settings section
-├── Theme.swift                         Colors, spacing and shared controls
-├── TimerManager.swift                  Countdown state
-├── MenuBarManager.swift                Menu bar icon and popover
-├── AlertPanel.swift, AlertText.swift   Floating alert panel and its wording
-├── NotificationManager.swift           System notifications and alert sound
-├── DailyReminder.swift                 Reminder model and scheduling logic
-├── ReminderScheduler.swift             Fires reminders, snooze, sleep and wake handling
-├── ReminderParser.swift                Understands spoken sentences
-├── SpeechCapture.swift                 Microphone and speech recognition
-├── VoiceReminder.swift                 Voice panel and flow
-├── GlobalHotKey.swift                  System-wide shortcut
-└── Localization.swift                  English / Chinese strings
-```
-
-Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence parsing, shortcut handling, the language switch and the alert wording (263 assertions).
-
-### What's New (v3.0)
-
-- **Redesigned interface**: one main window with a sidebar for Countdown, Daily reminders and Settings. The separate Reminders window is gone.
-- Brand orange is the single accent color; light and dark appearance follow the system.
-- **New alert layout**: centered, with the note as the headline, dots for snoozes used, and a full-width "Got it" above the snooze buttons.
-- **Menu bar**: rows highlight under the pointer, a running countdown shows as a card with a progress bar, presets sit in a compact grid.
-- **Settings** gathers auto-start, always on top, language, the voice shortcut and presets in one place.
-- Voice panel states share one set of round status icons.
-
-### What's New (v2.2)
-
-- **New name: Chivvy** (formerly Tick). Your reminders, settings and permissions carry over.
-- **New icon**: a countdown ring shaped like a "C", with an alert dot. The menu bar icon matches it.
-- Voice input ignores the app name in a sentence ("Chivvy，每天晚上11点提醒我睡觉").
-
-### What's New (v2.1)
-
-- **English interface**: switch between English and Chinese at any time with the globe button in the main window or from the menu bar. Open windows update right away. New installs follow the system language; upgrades from 2.0 stay in Chinese.
-- Voice input still understands Mandarin only.
-- **License**: from v2.1 Chivvy is licensed under PolyForm Noncommercial 1.0.0 (see [License](#license)).
-
-### What's New (v2.0)
-
-- **Daily reminders**: pick the weekdays; snooze 5 or 10 minutes, up to 3 times; reminders missed during sleep show on wake; a system notification is the backup when Chivvy isn't running
-- **Reminders window**: see all reminders, toggle, edit, batch on / off / delete
-- **Voice input**: ⌃⌘R (customizable); one sentence adds a daily reminder or starts a countdown
-- **Chinese interface**
-- **Fixes**:
-  - the alert now shows over full-screen apps
-  - the alert sound can no longer get stuck looping
-  - cancelling no longer plays the completion animation
-  - relaunching Chivvy no longer shows an already-dismissed reminder again
-  - stricter number input
-
-### What's New (v1.1)
-
-- **Custom presets**: edit, add, remove and reorder preset buttons (up to 5), saved across launches
-- **Repeat last timer**: one-click restart of the previous countdown (main window and menu bar)
-- **Menu bar note input**: add a note when quick-starting from the menu bar
-- **Launch at login**: toggle in the top toolbar
-- **Always on top is remembered**: the pin setting survives closing and reopening the window
-- **Completion animation**: the progress ring flashes green when time is up
-- **Alert improvements**: the button now says "Got it", with an orange accent
-- **Sound auto-stop**: the alert sound stops by itself after 45 seconds
-- **Sleep resilience**: the timer refreshes right after the Mac wakes
-- **Keyboard hints**: shortcut tips under the control buttons
-- **Return to start**: press Return in any input field to start the timer
-
-### License
-
-[PolyForm Noncommercial 1.0.0](LICENSE). Copyright (c) 2026 青澈君.
-
-- **Free for noncommercial use**: personal use, study, research, hobby projects, and use by charities, schools and public institutions. You may modify and share it, as long as you keep the license and the copyright notice.
-- **Commercial use is not allowed without permission.** This includes selling Chivvy or a modified version, bundling it into a paid product or service, or using it inside a company for business purposes.
-- For a commercial license, open an issue on GitHub.
-
-Releases up to and including v2.0 were published under MIT and stay under MIT. The noncommercial license applies from v2.1 on.
+<p align="center"><a href="#中文">中文</a> | <a href="#english">English</a></p>
 
 ---
 
@@ -377,3 +191,189 @@ Sources/Chivvy/
 - 如需商业授权，请在 GitHub 上提 Issue 联系。
 
 v2.0 及之前的版本以 MIT 协议发布，这些版本仍适用 MIT；从 v2.1 起改用非商业许可。
+
+---
+
+## English
+
+Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily pop-up reminders, with voice input. The interface is available in English and Chinese.
+
+*chivvy* /ˈtʃɪvi/: to keep telling someone to do something until they do it. That's what the alert does: it floats over everything, including full-screen apps, and only lets you snooze a few times.
+
+<p align="center">
+  <img src="screenshots/main-en.png" width="400" alt="Countdown">
+  <img src="screenshots/reminders-en.png" width="400" alt="Daily reminders">
+  <img src="screenshots/settings-en.png" width="400" alt="Settings">
+</p>
+
+### Features
+
+**Countdown**
+- Circular progress ring, preset buttons (editable, up to 5) and custom minutes + seconds
+- Optional note, shown again when time is up
+- Live countdown in the menu bar and on the Dock badge
+- Repeat the last timer with one click
+- Keyboard: Space pause / resume, Esc cancel, Return start
+
+**Daily reminders**
+- Up to 8 reminders, each repeating on the weekdays you pick (every day, weekdays, weekends, or any mix)
+- The alert floats above everything, including full-screen apps, and plays a sound until you dismiss it (auto-stops after 45 s)
+- Snooze 5 or 10 minutes, at most 3 times per reminder
+- If the Mac was asleep at reminder time, the reminder still shows on wake if it's less than 30 minutes late
+- If Chivvy isn't running, macOS delivers a regular notification instead
+- A Reminders section in the main window to see them all at a glance, turn them on / off, edit, and batch on / off / delete
+
+**Voice input**
+- Press **⌃⌘R** anywhere and say one sentence in Chinese:
+  - a relative time ("一分钟后提醒我睡觉") starts a countdown right away
+  - a time of day ("工作日早上八点半提醒我喝水") opens a confirm card, then saves a daily reminder
+- The shortcut can be changed in Settings
+
+**Menu bar**
+- Quick-start presets or custom minutes with a note
+- See every reminder and toggle it on / off
+- The running countdown with pause / cancel, plus voice input and reminders one click away
+
+**Other**
+- One main window with a sidebar: Countdown, Daily reminders, Settings
+- Follows the system's light / dark appearance
+- English / Chinese interface, switched in Settings or from the menu bar. It follows your system language on first launch.
+- Always on top, launch at login
+
+### Screenshots
+
+| Reminder alert | Voice input |
+|:---:|:---:|
+| <img src="screenshots/alert-en.png" width="300" alt="Reminder alert"> | <img src="screenshots/voice-en.png" width="300" alt="Voice confirm card"> |
+
+### Voice Examples
+
+| You say | Chivvy does |
+|---|---|
+| 一分钟后提醒我睡觉 | 1-minute countdown, note "睡觉" |
+| 半小时后叫我起来 | 30-minute countdown, note "起来" |
+| 倒计时 25 分钟 | 25-minute countdown |
+| 每天晚上十一点提醒我睡觉 | Daily reminder at 23:00, every day, note "睡觉" |
+| 工作日早上八点半提醒我喝水 | Daily reminder at 08:30, Mon–Fri, note "喝水" |
+| 每周一三五晚上九点去跑步 | Daily reminder at 21:00, Mon / Wed / Fri, note "去跑步" |
+
+Speech is turned into text by macOS's built-in speech recognition, on-device when the Chinese model is available. Chivvy then works out the time, days and note with its own rules. Nothing is sent to a third-party service.
+
+A countdown starts right away, and Chivvy asks first if one is already running. A daily reminder always opens a confirm card, so you can fix anything that was misheard.
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| Space | Pause / resume the countdown |
+| Esc | Cancel the countdown |
+| Return | Start the countdown |
+| ⌃⌘R | Voice input, from any app (customizable) |
+
+### Install
+
+Download `Chivvy.dmg` from [Releases](https://github.com/qingchejun/Chivvy/releases) and drag `Chivvy.app` to `/Applications`. If the latest version isn't there yet, build from source (below).
+
+### Build from Source
+
+```bash
+git clone https://github.com/qingchejun/Chivvy.git
+cd Chivvy
+./build.sh            # Apple Silicon
+./build.sh universal  # Apple Silicon + Intel
+open /Applications/Chivvy.app
+```
+
+Requires macOS 13+ and Xcode Command Line Tools. The full Xcode app isn't needed.
+
+### Permissions
+
+| Permission | Why | When it's asked |
+|---|---|---|
+| Notifications | Backup alert when Chivvy isn't running | First launch |
+| Microphone | Voice input | First time you press ⌃⌘R |
+| Speech Recognition | Turn speech into text | First time you press ⌃⌘R |
+| Login Items (optional) | Keep reminders working after a restart | When you turn on Auto-start |
+
+### Development
+
+```
+Sources/Chivvy/
+├── ChivvyApp.swift, AppDelegate.swift  App entry, menu bar setup
+├── MainView.swift, MainSection.swift   Main window: sidebar and sections
+├── TimerPane.swift                     Countdown section, preset editor
+├── RemindersPane.swift                 Reminders section, edit sheet
+├── SettingsPane.swift                  Settings section
+├── Theme.swift                         Colors, spacing and shared controls
+├── TimerManager.swift                  Countdown state
+├── MenuBarManager.swift                Menu bar icon and popover
+├── AlertPanel.swift, AlertText.swift   Floating alert panel and its wording
+├── NotificationManager.swift           System notifications and alert sound
+├── DailyReminder.swift                 Reminder model and scheduling logic
+├── ReminderScheduler.swift             Fires reminders, snooze, sleep and wake handling
+├── ReminderParser.swift                Understands spoken sentences
+├── SpeechCapture.swift                 Microphone and speech recognition
+├── VoiceReminder.swift                 Voice panel and flow
+├── GlobalHotKey.swift                  System-wide shortcut
+└── Localization.swift                  English / Chinese strings
+```
+
+Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence parsing, shortcut handling, the language switch and the alert wording (263 assertions).
+
+### What's New (v3.0)
+
+- **Redesigned interface**: one main window with a sidebar for Countdown, Daily reminders and Settings. The separate Reminders window is gone.
+- Brand orange is the single accent color; light and dark appearance follow the system.
+- **New alert layout**: centered, with the note as the headline, dots for snoozes used, and a full-width "Got it" above the snooze buttons.
+- **Menu bar**: rows highlight under the pointer, a running countdown shows as a card with a progress bar, presets sit in a compact grid.
+- **Settings** gathers auto-start, always on top, language, the voice shortcut and presets in one place.
+- Voice panel states share one set of round status icons.
+
+### What's New (v2.2)
+
+- **New name: Chivvy** (formerly Tick). Your reminders, settings and permissions carry over.
+- **New icon**: a countdown ring shaped like a "C", with an alert dot. The menu bar icon matches it.
+- Voice input ignores the app name in a sentence ("Chivvy，每天晚上11点提醒我睡觉").
+
+### What's New (v2.1)
+
+- **English interface**: switch between English and Chinese at any time with the globe button in the main window or from the menu bar. Open windows update right away. New installs follow the system language; upgrades from 2.0 stay in Chinese.
+- Voice input still understands Mandarin only.
+- **License**: from v2.1 Chivvy is licensed under PolyForm Noncommercial 1.0.0 (see [License](#license)).
+
+### What's New (v2.0)
+
+- **Daily reminders**: pick the weekdays; snooze 5 or 10 minutes, up to 3 times; reminders missed during sleep show on wake; a system notification is the backup when Chivvy isn't running
+- **Reminders window**: see all reminders, toggle, edit, batch on / off / delete
+- **Voice input**: ⌃⌘R (customizable); one sentence adds a daily reminder or starts a countdown
+- **Chinese interface**
+- **Fixes**:
+  - the alert now shows over full-screen apps
+  - the alert sound can no longer get stuck looping
+  - cancelling no longer plays the completion animation
+  - relaunching Chivvy no longer shows an already-dismissed reminder again
+  - stricter number input
+
+### What's New (v1.1)
+
+- **Custom presets**: edit, add, remove and reorder preset buttons (up to 5), saved across launches
+- **Repeat last timer**: one-click restart of the previous countdown (main window and menu bar)
+- **Menu bar note input**: add a note when quick-starting from the menu bar
+- **Launch at login**: toggle in the top toolbar
+- **Always on top is remembered**: the pin setting survives closing and reopening the window
+- **Completion animation**: the progress ring flashes green when time is up
+- **Alert improvements**: the button now says "Got it", with an orange accent
+- **Sound auto-stop**: the alert sound stops by itself after 45 seconds
+- **Sleep resilience**: the timer refreshes right after the Mac wakes
+- **Keyboard hints**: shortcut tips under the control buttons
+- **Return to start**: press Return in any input field to start the timer
+
+### License
+
+[PolyForm Noncommercial 1.0.0](LICENSE). Copyright (c) 2026 青澈君.
+
+- **Free for noncommercial use**: personal use, study, research, hobby projects, and use by charities, schools and public institutions. You may modify and share it, as long as you keep the license and the copyright notice.
+- **Commercial use is not allowed without permission.** This includes selling Chivvy or a modified version, bundling it into a paid product or service, or using it inside a company for business purposes.
+- For a commercial license, open an issue on GitHub.
+
+Releases up to and including v2.0 were published under MIT and stay under MIT. The noncommercial license applies from v2.1 on.
