@@ -15,6 +15,7 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily po
 <p align="center">
   <img src="screenshots/main-en.png" width="400" alt="Countdown">
   <img src="screenshots/reminders-en.png" width="400" alt="Daily reminders">
+  <img src="screenshots/settings-en.png" width="400" alt="Settings">
 </p>
 
 ### Features
@@ -200,6 +201,7 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 <p align="center">
   <img src="screenshots/main.png" width="400" alt="倒计时">
   <img src="screenshots/reminders.png" width="400" alt="每日提醒">
+  <img src="screenshots/settings.png" width="400" alt="设置">
 </p>
 
 ### 功能
