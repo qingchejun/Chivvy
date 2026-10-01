@@ -61,10 +61,13 @@ final class MenuBarManager: NSObject {
 
         let pop = NSPopover()
         pop.behavior = .transient
-        pop.contentSize = NSSize(width: 220, height: 0)
+        pop.contentSize = NSSize(width: MenuBarPopoverView.width, height: 0)
+        let timerManager = timerManager
         pop.contentViewController = NSHostingController(
-            rootView: MenuBarPopoverView(timerManager: timerManager, presetStore: PresetStore.shared) {
-                pop.performClose(nil)
+            rootView: LanguageRoot {
+                MenuBarPopoverView(timerManager: timerManager, presetStore: PresetStore.shared) { [weak pop] in
+                    pop?.performClose(nil)
+                }
             }
         )
 
@@ -135,271 +138,289 @@ final class MenuBarManager: NSObject {
 // MARK: - Popover Content
 
 struct MenuBarPopoverView: View {
+    static let width: CGFloat = 288
+
     @ObservedObject var timerManager: TimerManager
     @ObservedObject var presetStore: PresetStore
     @ObservedObject var reminderStore = ReminderStore.shared
+    @ObservedObject var voice = VoiceReminderController.shared
     let dismiss: () -> Void
 
     @State private var customMinutes: String = ""
     @State private var noteText: String = ""
 
+    private var sortedReminders: [DailyReminder] {
+        reminderStore.reminders.sorted { ($0.hour, $0.minute) < ($1.hour, $1.minute) }
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 2) {
+            if timerManager.timerState != .idle {
+                runningCard
+            }
+
             remindersSection
 
             if timerManager.timerState == .idle {
-                idleContent
-            } else {
-                runningContent
+                separator
+                quickStart
             }
 
-            Button {
-                dismiss()
-                NSApp.activate(ignoringOtherApps: true)
-                for window in NSApp.windows where window.canBecomeKey && !window.isReminderWindow {
-                    window.makeKeyAndOrderFront(nil)
-                    return
-                }
-            } label: {
-                Text(L("打开 Chivvy", "Open Chivvy"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-
-            Button {
-                LanguageStore.shared.toggle()
-                dismiss()
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "globe")
-                        .font(.system(size: 11))
-                    Text(L("Switch to English", "切换到中文"))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-
-            Button {
-                NSApp.terminate(nil)
-            } label: {
-                HStack {
-                    Text(L("退出 Chivvy", "Quit Chivvy"))
-                    Spacer()
-                    Text("⌘Q")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 12))
-                }
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            separator
+            footer
         }
-        .padding(.vertical, 8)
-        .frame(width: 220)
+        .padding(6)
+        .frame(width: Self.width)
+        .tint(Theme.brand)
     }
+
+    private var separator: some View {
+        Rectangle()
+            .fill(Theme.separator.opacity(0.7))
+            .frame(height: 1)
+            .padding(.horizontal, 10)
+            .padding(.vertical, Theme.Space.xs)
+    }
+
+    private func sectionTitle(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.top, 6)
+            .padding(.bottom, 2)
+    }
+
+    // MARK: Running
+
+    private var runningCard: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.s) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(timerManager.note.isEmpty
+                     ? (timerManager.timerState == .paused ? L("已暂停", "Paused") : L("倒计时", "Countdown"))
+                     : timerManager.note)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                Spacer()
+                Text(timerManager.formattedTime)
+                    .font(.system(size: 28, weight: .light).monospacedDigit())
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.fillStrong)
+                    Capsule().fill(Theme.brand)
+                        .frame(width: proxy.size.width * timerManager.progress)
+                }
+            }
+            .frame(height: 4)
+            HStack(spacing: 6) {
+                if timerManager.timerState == .running {
+                    Button(L("暂停", "Pause")) { timerManager.pause(); dismiss() }
+                        .buttonStyle(.chivvy(.secondary, size: .small, fill: true))
+                } else {
+                    Button(L("继续", "Resume")) { timerManager.resume(); dismiss() }
+                        .buttonStyle(.chivvy(.primary, size: .small, fill: true))
+                }
+                Button(L("取消", "Cancel")) { timerManager.cancel(); dismiss() }
+                    .buttonStyle(.chivvy(.danger, size: .small, fill: true))
+            }
+        }
+        .padding(.horizontal, Theme.Space.m)
+        .padding(.vertical, 10)
+        .background(Theme.fill, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.bottom, Theme.Space.xs)
+    }
+
+    // MARK: Reminders
 
     private var remindersSection: some View {
-        VStack(spacing: 0) {
-            ForEach(reminderStore.reminders.sorted { ($0.hour, $0.minute) < ($1.hour, $1.minute) }) { reminder in
-                HStack(spacing: 6) {
-                    Text(reminder.timeLabel)
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
-                    Text(reminder.note.isEmpty ? reminder.daysSummary() : reminder.note)
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                    Spacer()
-                    Toggle("", isOn: Binding(
-                        get: { reminder.isEnabled },
-                        set: { isOn in
-                            guard let index = reminderStore.reminders.firstIndex(where: { $0.id == reminder.id }) else { return }
-                            reminderStore.reminders[index].isEnabled = isOn && !reminderStore.reminders[index].weekdays.isEmpty
-                        }
-                    ))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.mini)
+        VStack(alignment: .leading, spacing: 2) {
+            if !sortedReminders.isEmpty {
+                sectionTitle(L("每日提醒", "Daily reminders"))
+                ForEach(sortedReminders) { reminder in
+                    reminderRow(reminder)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 3)
-                .opacity(reminder.isEnabled ? 1 : 0.55)
             }
 
             Button {
                 dismiss()
-                VoiceReminderController.shared.beginListening()
+                voice.beginListening()
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "mic")
-                        .font(.system(size: 11))
-                    Text(L("语音添加提醒", "Add by Voice…"))
+                HStack(spacing: Theme.Space.s) {
+                    rowIcon("mic")
+                    Text(L("语音添加…", "Add by Voice…"))
                     Spacer()
-                    Text(VoiceReminderController.shared.hotKeyCombo.label)
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 12))
+                    Keycap(text: voice.hotKeyCombo.label)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
+            .buttonStyle(.hoverRow)
 
             Button {
                 dismiss()
-                ReminderWindow.shared.show()
+                MainWindowRouter.shared.open(.reminders)
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "moon")
-                        .font(.system(size: 11))
-                    Text(reminderStore.reminders.isEmpty ? L("添加每日弹窗提醒…", "Add Pop-up Reminder…") : L("管理提醒…", "Manage Reminders…"))
+                HStack(spacing: Theme.Space.s) {
+                    rowIcon("bell")
+                    Text(reminderStore.reminders.isEmpty ? L("添加每日提醒…", "Add Daily Reminder…") : L("管理提醒…", "Manage Reminders…"))
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-
-            Divider()
-                .padding(.vertical, 4)
+            .buttonStyle(.hoverRow)
         }
     }
 
-    private var idleContent: some View {
-        VStack(spacing: 0) {
+    private func reminderRow(_ reminder: DailyReminder) -> some View {
+        HoverRow {
+            HStack(spacing: 10) {
+                Group {
+                    Text(reminder.timeLabel)
+                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                    Text(reminder.note.isEmpty ? reminder.daysSummary() : reminder.note)
+                        .lineLimit(1)
+                }
+                .opacity(reminder.isEnabled ? 1 : 0.45)
+                Spacer(minLength: Theme.Space.xs)
+                if reminder.isEnabled, let next = reminder.nextFireDate(after: Date()) {
+                    Text(DailyReminder.whenLabel(next))
+                        .font(Theme.Font.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Toggle("\(reminder.timeLabel) \(reminder.note)", isOn: Binding(
+                    get: { reminder.isEnabled },
+                    set: { isOn in
+                        guard let index = reminderStore.reminders.firstIndex(where: { $0.id == reminder.id }) else { return }
+                        reminderStore.reminders[index].isEnabled = isOn && !reminderStore.reminders[index].weekdays.isEmpty
+                    }
+                ))
+                .labelsHidden()
+                .toggleStyle(.brandSwitchSmall)
+            }
+        }
+    }
+
+    private func rowIcon(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .frame(width: 16)
+    }
+
+    // MARK: Quick start
+
+    private var quickStart: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            sectionTitle(L("快速开始", "Quick start"))
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: min(max(presetStore.presets.count, 1), 4)),
+                      spacing: 6) {
+                ForEach(presetStore.presets) { preset in
+                    Button(preset.shortLabel) {
+                        timerManager.start(minutes: preset.minutes, seconds: 0, note: noteText)
+                        noteText = ""
+                        dismiss()
+                    }
+                    .buttonStyle(.chivvy(.secondary, size: .regular, fill: true))
+                    .help(L("开始 \(preset.displayLabel)", "Start \(preset.displayLabel)"))
+                }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+
             if timerManager.hasLastTimer {
                 Button {
                     timerManager.repeatLast()
                     dismiss()
                 } label: {
-                    HStack {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 11))
+                    HStack(spacing: Theme.Space.s) {
+                        rowIcon("arrow.counterclockwise")
                         Text(L("重复上次", "Repeat Last"))
+                        Spacer()
+                        Text(lastTimerSummary)
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-
-                Divider()
-                    .padding(.vertical, 4)
+                .buttonStyle(.hoverRow)
             }
 
-            ForEach(presetStore.presets) { preset in
-                Button {
-                    timerManager.start(minutes: preset.minutes, seconds: 0, note: noteText)
-                    noteText = ""
-                    dismiss()
-                } label: {
-                    Text(L("开始 \(preset.displayLabel)", "Start \(preset.displayLabel)"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            }
-
-            Divider()
-                .padding(.vertical, 4)
-
-            HStack {
-                TextField(L("备注（可选）", "Note (optional)"), text: $noteText)
+            HStack(spacing: 6) {
+                TextField(L("备注", "Note"), text: $noteText)
                     .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 12))
-                    .frame(width: 120)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 4)
-
-            HStack(spacing: 8) {
-                TextField(L("自定义", "Custom"), text: $customMinutes)
+                TextField(L("分钟", "min"), text: $customMinutes)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 70)
                     .multilineTextAlignment(.center)
+                    .frame(width: 52)
                     .onChange(of: customMinutes) { newValue in
                         // isNumber alone would accept full-width "５" from Chinese IMEs, which Int() rejects
                         let digits = newValue.filter { $0.isASCII && $0.isNumber }
                         customMinutes = (Int(digits) ?? 0) > 999 ? "999" : digits
                     }
-                    .onSubmit {
-                        if let mins = Int(customMinutes), mins > 0 {
-                            timerManager.start(minutes: mins, seconds: 0, note: noteText)
-                            customMinutes = ""
-                            noteText = ""
-                            dismiss()
-                        }
-                    }
-
-                Text(L("分钟", "min"))
-                    .foregroundColor(.secondary)
-                    .font(.system(size: 12))
-
-                Spacer()
+                    .onSubmit(startCustom)
+                Button(L("开始", "Start"), action: startCustom)
+                    .buttonStyle(.chivvy(.primary, size: .small))
+                    .disabled((Int(customMinutes) ?? 0) <= 0)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-
-            Divider()
-                .padding(.vertical, 4)
+            .font(.system(size: 12))
+            .padding(.horizontal, 6)
+            .padding(.vertical, Theme.Space.xs)
         }
     }
 
-    private var runningContent: some View {
-        VStack(spacing: 0) {
-            if !timerManager.note.isEmpty {
-                Text(timerManager.note)
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
+    private var lastTimerSummary: String {
+        let duration = durationLabel(timerManager.lastMinutes * 60 + timerManager.lastSeconds)
+        return timerManager.lastNote.isEmpty ? duration : "\(duration) · \(timerManager.lastNote)"
+    }
 
-                Divider()
-                    .padding(.vertical, 4)
-            }
+    private func startCustom() {
+        guard let mins = Int(customMinutes), mins > 0 else { return }
+        timerManager.start(minutes: mins, seconds: 0, note: noteText)
+        customMinutes = ""
+        noteText = ""
+        dismiss()
+    }
 
-            if timerManager.timerState == .running {
-                Button {
-                    timerManager.pause()
-                    dismiss()
-                } label: {
-                    Text(L("暂停", "Pause"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+    // MARK: Footer
+
+    private var footer: some View {
+        HStack(spacing: 2) {
+            Button {
+                dismiss()
+                MainWindowRouter.shared.open()
+            } label: {
+                HStack(spacing: Theme.Space.s) {
+                    rowIcon("macwindow")
+                    Text(L("打开 Chivvy", "Open Chivvy"))
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            } else {
-                Button {
-                    timerManager.resume()
-                    dismiss()
-                } label: {
-                    Text(L("继续", "Resume"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
             }
+            .buttonStyle(.hoverRow)
 
             Button {
-                timerManager.cancel()
+                LanguageStore.shared.toggle()
                 dismiss()
             } label: {
-                Text(L("取消", "Cancel"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                Label(L("EN", "中文"), systemImage: "globe")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, Theme.Space.s)
+                    .frame(height: 28)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .help(L("Switch to English", "切换到中文"))
 
-            Divider()
-                .padding(.vertical, 4)
+            Button {
+                NSApp.terminate(nil)
+            } label: {
+                Image(systemName: "power")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut("q")
+            .help(L("退出 Chivvy (⌘Q)", "Quit Chivvy (⌘Q)"))
+            .accessibilityLabel(L("退出 Chivvy", "Quit Chivvy"))
         }
     }
 }

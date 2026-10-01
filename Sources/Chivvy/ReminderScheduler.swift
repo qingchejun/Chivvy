@@ -162,12 +162,8 @@ final class ReminderScheduler: ObservableObject {
         let panel = alertPanels[reminder.id] ?? AlertPanel()
         alertPanels[reminder.id] = panel
         panel.show(
-            title: snoozeCount > 0 ? Self.snoozedTitle(reminder) : Self.dueTitle(reminder),
-            note: Self.body(for: reminder),
-            footnote: !state.canSnoozeAgain
-                ? L("已推迟 \(snoozeCount) 次，不能再推迟了", "Snoozed \(snoozeCount) times. No more snoozing.")
-                : (snoozeCount > 0 ? L("已推迟 \(snoozeCount)/\(SnoozeState.maxCount) 次", "Snoozed \(snoozeCount)/\(SnoozeState.maxCount)") : nil),
-            secondaryActions: options.map { minutes in
+            AlertText.reminder(reminder, snoozeCount: snoozeCount),
+            snoozeActions: options.map { minutes in
                 AlertAction(label: L("\(minutes) 分钟后", "In \(minutes) min")) { [weak self] in
                     self?.scheduleSnooze(reminder.id, minutes: minutes, count: snoozeCount + 1)
                 }

@@ -6,8 +6,10 @@ struct ChivvyApp: App {
 
     var body: some Scene {
         Window("Chivvy", id: "main") {
-            LanguageRoot { ContentView() }
+            LanguageRoot { MainView() }
         }
-        .defaultSize(width: 380, height: 490)
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 640, height: 460)
     }
 }

@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 
 OUT="$(mktemp -d)/ChivvyTests"
 swiftc Sources/Chivvy/DailyReminder.swift Sources/Chivvy/ReminderParser.swift Sources/Chivvy/GlobalHotKey.swift \
-    Sources/Chivvy/Localization.swift Sources/Chivvy/TimerPreset.swift Tests/*.swift \
+    Sources/Chivvy/Localization.swift Sources/Chivvy/TimerPreset.swift Sources/Chivvy/AlertText.swift \
+    Sources/Chivvy/MainSection.swift Tests/*.swift \
     -o "$OUT" -sdk "$(xcrun --show-sdk-path)" -parse-as-library
 "$OUT"

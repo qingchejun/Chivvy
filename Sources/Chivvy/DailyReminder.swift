@@ -72,6 +72,27 @@ struct DailyReminder: Identifiable, Codable, Equatable {
     }
 }
 
+extension DailyReminder {
+    /// "今天" / "明天" / "周三" for a coming occurrence
+    static func relativeDayLabel(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: now),
+                                           to: calendar.startOfDay(for: date)).day ?? 0
+        if days == 0 { return L("今天", "Today") }
+        if days == 1 { return L("明天", "Tomorrow") }
+        return shortName(weekday: calendar.component(.weekday, from: date))
+    }
+
+    /// Like `relativeDayLabel`, but "13 分钟后" within the hour
+    static func whenLabel(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
+        let seconds = date.timeIntervalSince(now)
+        if seconds > 0 && seconds <= 3600 {
+            let minutes = Int((seconds / 60).rounded(.up))
+            return L("\(minutes) 分钟后", "in \(minutes) min")
+        }
+        return relativeDayLabel(date, now: now, calendar: calendar)
+    }
+}
+
 /// A reminder paired with one concrete occurrence time
 struct ScheduledReminder: Equatable {
     let reminder: DailyReminder

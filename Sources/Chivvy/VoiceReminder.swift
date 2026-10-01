@@ -271,7 +271,7 @@ private struct VoiceReminderView: View {
     @ObservedObject var controller: VoiceReminderController
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        Group {
             switch controller.phase {
             case .listening(let transcript):
                 listening(transcript)
@@ -291,138 +291,142 @@ private struct VoiceReminderView: View {
         }
         .padding(20)
         .frame(width: 420, alignment: .leading)
-        .background(
-            VisualEffectBackground()
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-        )
+        .panelCard()
+        .tint(Theme.brand)
     }
 
     private func listening(_ transcript: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "mic.fill")
-                    .foregroundStyle(.red)
-                Text(L("正在听…", "Listening…"))
-                    .font(.system(size: 15, weight: .semibold))
-                Spacer()
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VoiceHeader(badge: StatusBadge(symbol: "mic.fill", tone: .brand), title: L("正在听…", "Listening…")) {
                 Button(L("取消", "Cancel")) { controller.close() }
+                    .buttonStyle(.chivvy(.secondary, size: .small))
                     .keyboardShortcut(.cancelAction)
-                    .controlSize(.small)
             }
             Text(transcript.isEmpty ? L("比如：每天晚上十一点提醒我睡觉 / 十分钟后提醒我关火",
                                                    "Speak Mandarin, e.g. 每天晚上十一点提醒我睡觉 / 十分钟后提醒我关火") : transcript)
-                .font(.system(size: 16))
+                .font(.system(size: 17, weight: transcript.isEmpty ? .regular : .medium))
                 .foregroundStyle(transcript.isEmpty ? .tertiary : .primary)
-                .frame(maxWidth: .infinity, minHeight: 40, alignment: .topLeading)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .topLeading)
             Text(L("说完停顿 2 秒自动结束，或再按 \(controller.hotKeyCombo.label) 结束",
                     "Stops after a 2-second pause, or press \(controller.hotKeyCombo.label) again"))
-                .font(.system(size: 11))
+                .font(Theme.Font.caption)
                 .foregroundStyle(.secondary)
         }
     }
 
     private func saved(_ reminder: DailyReminder, heard: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text(L("已添加提醒", "Reminder added"))
-                    .font(.system(size: 15, weight: .semibold))
-            }
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VoiceHeader(badge: StatusBadge(symbol: "checkmark", tone: .success), title: L("已添加提醒", "Reminder added"))
             Text("\(reminder.timeLabel) · \(reminder.daysSummary()) · \(reminder.note.isEmpty ? L("无备注", "No note") : reminder.note)")
-                .font(.system(size: 16))
-            Text(L("听到的是：", "Heard: ") + heard)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-            HStack {
-                Spacer()
+                .font(.system(size: 17, weight: .medium).monospacedDigit())
+            heardLine(heard)
+            VoiceButtons {
                 Button(L("撤销", "Undo")) { controller.undo(reminder) }
+                    .buttonStyle(.chivvy(.secondary))
                 Button(L("好", "OK")) { controller.close() }
+                    .buttonStyle(.chivvy(.primary))
                     .keyboardShortcut(.defaultAction)
             }
-            .controlSize(.small)
         }
     }
 
-    private static func durationLabel(_ seconds: Int) -> String {
-        let h = seconds / 3600, m = seconds % 3600 / 60, s = seconds % 60
-        var parts: [String] = []
-        if h > 0 { parts.append(L("\(h) 小时", "\(h) hr")) }
-        if m > 0 { parts.append(L("\(m) 分钟", "\(m) min")) }
-        if s > 0 { parts.append(L("\(s) 秒", "\(s) sec")) }
-        return parts.joined(separator: " ")
-    }
-
     private func countdownStarted(_ seconds: Int, note: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "timer")
-                    .foregroundStyle(.green)
-                Text(L("已开始倒计时 ", "Countdown started: ") + Self.durationLabel(seconds))
-                    .font(.system(size: 15, weight: .semibold))
-            }
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VoiceHeader(badge: StatusBadge(symbol: "timer", tone: .success),
+                        title: L("已开始倒计时 ", "Countdown started: ") + durationLabel(seconds))
             if !note.isEmpty {
                 Text(L("到时提醒：", "Reminder: ") + note)
-                    .font(.system(size: 14))
+                    .font(.system(size: 15, weight: .medium))
             }
-            HStack {
-                Spacer()
+            VoiceButtons {
                 Button(L("撤销", "Undo")) { controller.undoCountdown() }
+                    .buttonStyle(.chivvy(.secondary))
                 Button(L("好", "OK")) { controller.close() }
+                    .buttonStyle(.chivvy(.primary))
                     .keyboardShortcut(.defaultAction)
             }
-            .controlSize(.small)
         }
     }
 
     private func replaceCountdown(_ seconds: Int, note: String, heard: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "timer")
-                    .foregroundStyle(.orange)
-                Text(L("已有一个倒计时在进行，要替换吗？", "A countdown is already running. Replace it?"))
-                    .font(.system(size: 15, weight: .semibold))
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VoiceHeader(badge: StatusBadge(symbol: "timer", tone: .brandSoft),
+                        title: L("已有一个倒计时在进行，要替换吗？", "A countdown is already running. Replace it?"))
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                Text(L("当前：", "Current: ") + "\(TimerManager.shared.formattedTime)\(TimerManager.shared.note.isEmpty ? "" : " · \(TimerManager.shared.note)")")
+                    .foregroundStyle(.secondary)
+                Text(L("新的：", "New: ") + "\(durationLabel(seconds))\(note.isEmpty ? "" : " · \(note)")")
             }
-            Text(L("当前：", "Current: ") + "\(TimerManager.shared.formattedTime)\(TimerManager.shared.note.isEmpty ? "" : " · \(TimerManager.shared.note)")")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-            Text(L("新的：", "New: ") + "\(Self.durationLabel(seconds))\(note.isEmpty ? "" : " · \(note)")")
-                .font(.system(size: 13))
-            HStack {
-                Spacer()
+            .font(Theme.Font.body.monospacedDigit())
+            VoiceButtons {
                 Button(L("取消", "Cancel")) { controller.close() }
+                    .buttonStyle(.chivvy(.secondary))
                     .keyboardShortcut(.cancelAction)
                 Button(L("替换", "Replace")) { controller.startCountdown(seconds: seconds, note: note) }
+                    .buttonStyle(.chivvy(.primary))
                     .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
             }
-            .controlSize(.small)
         }
     }
 
     private func failed(_ message: String, heard: String?) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-                Text(message)
-                    .font(.system(size: 13))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VoiceHeader(badge: StatusBadge(symbol: "mic.slash", tone: .neutral), title: message)
             if let heard {
-                Text(L("听到的是：", "Heard: ") + heard)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                heardLine(heard)
             }
-            HStack {
-                Spacer()
+            VoiceButtons {
                 Button(L("关闭", "Close")) { controller.close() }
+                    .buttonStyle(.chivvy(.secondary))
                     .keyboardShortcut(.cancelAction)
                 Button(L("再说一次", "Try Again")) { controller.beginListening() }
+                    .buttonStyle(.chivvy(.primary))
                     .keyboardShortcut(.defaultAction)
             }
-            .controlSize(.small)
         }
+    }
+
+    private func heardLine(_ heard: String) -> some View {
+        Text(L("听到的是：", "Heard: ") + heard)
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+    }
+}
+
+/// Badge + title row at the top of each voice state
+private struct VoiceHeader<Trailing: View>: View {
+    let badge: StatusBadge
+    let title: String
+    @ViewBuilder var trailing: () -> Trailing
+
+    var body: some View {
+        HStack(spacing: 10) {
+            badge
+            Text(title)
+                .font(Theme.Font.headline)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: Theme.Space.s)
+            trailing()
+        }
+    }
+}
+
+extension VoiceHeader where Trailing == EmptyView {
+    init(badge: StatusBadge, title: String) {
+        self.init(badge: badge, title: title) { EmptyView() }
+    }
+}
+
+/// Right-aligned button row
+private struct VoiceButtons<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        HStack(spacing: Theme.Space.s) {
+            Spacer()
+            content()
+        }
+        .padding(.top, Theme.Space.xs)
     }
 }
 
@@ -440,32 +444,35 @@ private struct ConfirmCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L("添加这条提醒？", "Add this reminder?"))
-                    .font(.system(size: 15, weight: .semibold))
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VoiceHeader(badge: StatusBadge(symbol: "bell.fill", tone: .brandSoft), title: L("添加这条提醒？", "Add this reminder?"))
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(L("听到的是：", "Heard: ") + heard)
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 if let warning {
                     Text(warning)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.orange)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Theme.brandText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
             ReminderForm(draft: $draft)
 
-            HStack {
+            HStack(spacing: Theme.Space.s) {
                 Button(L("重新说", "Say It Again")) { controller.beginListening() }
+                    .buttonStyle(.chivvy(.text))
                 Spacer()
                 Button(L("取消", "Cancel")) { controller.close() }
+                    .buttonStyle(.chivvy(.secondary))
                     .keyboardShortcut(.cancelAction)
                 Button(L("保存", "Save")) { controller.save(draft, heard: heard) }
+                    .buttonStyle(.chivvy(.primary))
                     .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
                     .disabled(draft.weekdays.isEmpty)
             }
+            .padding(.top, Theme.Space.xs)
         }
     }
 }

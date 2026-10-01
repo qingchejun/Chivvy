@@ -39,7 +39,7 @@ func with(_ language: AppLanguage, _ body: () -> Void) {
 @main
 enum TestRunner {
     static func main() {
-        for (name, test) in scheduleTests + parserTests + hotKeyTests + localizationTests {
+        for (name, test) in scheduleTests + parserTests + hotKeyTests + localizationTests + uiModelTests {
             let before = failures
             test()
             print(failures == before ? "✓ \(name)" : "✗ \(name)")

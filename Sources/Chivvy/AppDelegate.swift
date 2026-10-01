@@ -23,7 +23,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { _ in
                 // L10n.current is already saved when this fires, so L(...) returns the new language
                 ReminderScheduler.shared.languageDidChange()
-                ReminderWindow.shared.languageDidChange()
             }
 
         NotificationCenter.default.addObserver(
@@ -39,21 +38,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // Check the main window itself: an open Reminders window also counts as "visible"
-        for window in NSApp.windows where window.canBecomeKey && !window.isReminderWindow {
-            if !window.isVisible {
-                window.makeKeyAndOrderFront(nil)
+        // A floating alert or voice panel also counts as "visible"; check the main window itself
+        Task { @MainActor in
+            if MainWindowRouter.shared.window?.isVisible != true {
+                MainWindowRouter.shared.open()
             }
-            return true
         }
         return true
     }
 
-    @objc private func windowWillClose(_ notification: Notification) {
+    @MainActor @objc private func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
-              window.canBecomeKey,
-              !window.isReminderWindow,
-              !UserDefaults.standard.bool(forKey: hasShownBackgroundTipKey) else {
+              MainWindowRouter.shared.isMainWindow(window) else { return }
+        MainWindowRouter.shared.detach(window)
+        guard !UserDefaults.standard.bool(forKey: hasShownBackgroundTipKey) else {
             return
         }
 
@@ -70,7 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let popover = NSPopover()
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
-            rootView: BackgroundTipView()
+            rootView: LanguageRoot { BackgroundTipView() }
         )
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         self.tipPopover = popover
@@ -85,16 +83,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct BackgroundTipView: View {
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "info.circle.fill")
-                .font(.system(size: 18))
-                .foregroundColor(.accentColor)
+            Image(systemName: "arrow.up.circle.fill")
+                .font(.system(size: 20))
+                .foregroundStyle(Theme.brand)
 
-            Text(L("Chivvy 仍在这里运行。\n点击这个图标即可打开。", "Chivvy is still running up here.\nClick this icon to open it."))
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-                .lineSpacing(2)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L("Chivvy 还在这里运行", "Chivvy is still running"))
+                    .font(.system(size: 13, weight: .semibold))
+                Text(L("点击菜单栏图标即可打开", "Click this icon to open it"))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, Theme.Space.l)
+        .padding(.vertical, Theme.Space.m)
     }
 }

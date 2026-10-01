@@ -13,7 +13,16 @@ struct TimerPreset: Identifiable, Codable, Equatable {
 
     /// Auto-generated labels ("5 分钟" / "5 min") follow the UI language; names the user typed are kept as is
     var displayLabel: String {
-        label == "\(minutes) 分钟" || label == "\(minutes) min" ? Self.defaultLabel(minutes) : label
+        isDefaultLabel ? Self.defaultLabel(minutes) : label
+    }
+
+    /// Compact form for tight grids (menu bar): "10 分" / "10m"
+    var shortLabel: String {
+        isDefaultLabel ? L("\(minutes) 分", "\(minutes)m") : label
+    }
+
+    private var isDefaultLabel: Bool {
+        label == "\(minutes) 分钟" || label == "\(minutes) min"
     }
 
     static func defaultLabel(_ minutes: Int) -> String {

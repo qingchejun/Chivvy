@@ -11,14 +11,14 @@ final class AlertPanel {
     private var panel: NSPanel?
     /// Panels on screen across all instances, used to cascade overlapping alerts
     private static var visibleCount = 0
+    private static let width: CGFloat = 320
 
-    /// `secondaryActions` show as grey buttons before "知道了"; each also dismisses the panel.
-    func show(title: String = L("时间到！", "Time's up!"), note: String, footnote: String? = nil,
-              secondaryActions: [AlertAction] = []) {
+    /// `snoozeActions` show as grey buttons under "知道了"; each also dismisses the panel.
+    func show(_ text: AlertText, snoozeActions: [AlertAction] = []) {
         close()
 
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 0),
+            contentRect: NSRect(x: 0, y: 0, width: Self.width, height: 0),
             styleMask: [.nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -37,14 +37,15 @@ final class AlertPanel {
         let dismiss: () -> Void = { [weak self] in
             self?.close()
         }
-        let actions = secondaryActions.map { action in
+        let actions = snoozeActions.map { action in
             AlertAction(label: action.label) { dismiss(); action.handler() }
         }
-        let content = AlertContentView(title: title, note: note, footnote: footnote,
-                                       secondaryActions: actions, onDismiss: dismiss)
+        let content = LanguageRoot {
+            AlertContentView(text: text, snoozeActions: actions, onDismiss: dismiss)
+        }
 
         let hostingView = NSHostingView(rootView: content)
-        hostingView.frame = NSRect(x: 0, y: 0, width: 320, height: 1)
+        hostingView.frame = NSRect(x: 0, y: 0, width: Self.width, height: 1)
         hostingView.setFrameSize(hostingView.fittingSize)
         panel.setContentSize(hostingView.fittingSize)
         panel.contentView = hostingView
@@ -73,88 +74,84 @@ final class AlertPanel {
 
 // MARK: - Alert Content
 
+/// Centered card: app icon, when, what to do, snooze progress, then "知道了" over the snooze buttons
 struct AlertContentView: View {
-    let title: String
-    let note: String
-    var footnote: String? = nil
-    var secondaryActions: [AlertAction] = []
+    let text: AlertText
+    var snoozeActions: [AlertAction] = []
     let onDismiss: () -> Void
 
+    private static let radius: CGFloat = 20
+
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "bell.badge.fill")
-                .font(.system(size: 36))
-                .foregroundStyle(.orange)
-                .padding(.top, 4)
+        VStack(spacing: 0) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 44, height: 44)
+                .frame(width: 56, height: 56)
+                .background(Theme.brandSoft, in: Circle())
 
-            Text(title)
-                .font(.system(size: 24, weight: .semibold))
+            Text(text.eyebrow)
+                .font(.system(size: 13, weight: .medium).monospacedDigit())
+                .foregroundStyle(.secondary)
+                .padding(.top, 14)
 
-            if !note.isEmpty {
-                Text(note)
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
+            Text(text.title)
+                .font(Theme.Font.title)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, Theme.Space.xs)
+
+            if let snooze = text.snooze {
+                SnoozeDots(snooze: snooze)
+                    .padding(.top, Theme.Space.m)
             }
 
-            if let footnote {
-                Text(footnote)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack(spacing: 10) {
-                ForEach(Array(secondaryActions.enumerated()), id: \.offset) { _, action in
-                    Button {
-                        action.handler()
-                    } label: {
-                        Text(action.label)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .frame(width: 104, height: 36)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.secondary.opacity(0.15))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Button {
-                    onDismiss()
-                } label: {
-                    Text(L("知道了", "Got it"))
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.white)
-                        .frame(width: secondaryActions.count > 1 ? 104 : 120, height: 36)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.orange)
-                        )
-                }
-                .buttonStyle(.plain)
+            Button(L("知道了", "Got it"), action: onDismiss)
+                .buttonStyle(ChivvyButtonStyle(kind: .primary, size: .large, fill: true))
                 .keyboardShortcut(.defaultAction)
+                .padding(.top, 20)
+
+            if !snoozeActions.isEmpty {
+                HStack(spacing: Theme.Space.s) {
+                    ForEach(Array(snoozeActions.enumerated()), id: \.offset) { _, action in
+                        Button(action.label, action: action.handler)
+                            .buttonStyle(ChivvyButtonStyle(kind: .secondary, size: .regular, fill: true))
+                    }
+                }
+                .padding(.top, Theme.Space.s)
             }
+
+            Text(L("声音 45 秒后自动停止", "The sound stops after 45 seconds"))
+                .font(Theme.Font.caption)
+                .foregroundStyle(.tertiary)
+                .padding(.top, Theme.Space.m)
         }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 28)
-        .frame(minWidth: 320)
-        .background(
-            VisualEffectBackground()
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-        )
+        .padding(.horizontal, Theme.Space.xl)
+        .padding(.top, 28)
+        .padding(.bottom, 20)
+        .frame(width: 320)
+        .panelCard(radius: Self.radius, glow: true)
     }
 }
 
-struct VisualEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .hudWindow
-        view.state = .active
-        view.isEmphasized = true
-        return view
-    }
+/// ●●○ for snoozes used, with the count spelled out
+private struct SnoozeDots: View {
+    let snooze: AlertText.Snooze
 
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+    var body: some View {
+        HStack(spacing: Theme.Space.s) {
+            HStack(spacing: Theme.Space.xs) {
+                ForEach(0..<SnoozeState.maxCount, id: \.self) { index in
+                    Circle()
+                        .fill(index < snooze.used ? Theme.brand : Theme.switchOff)
+                        .frame(width: 6, height: 6)
+                }
+            }
+            Text(snooze.text)
+                .font(.system(size: 12))
+                .foregroundStyle(snooze.exhausted ? Theme.brandText : Color.secondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
 }

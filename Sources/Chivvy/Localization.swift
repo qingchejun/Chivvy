@@ -58,3 +58,13 @@ final class LanguageStore: ObservableObject {
         language = newValue
     }
 }
+
+/// "1 小时 5 分钟" / "1 hr 5 min"; zero parts are left out
+func durationLabel(_ seconds: Int) -> String {
+    let h = seconds / 3600, m = seconds % 3600 / 60, s = seconds % 60
+    var parts: [String] = []
+    if h > 0 { parts.append(L("\(h) 小时", "\(h) hr")) }
+    if m > 0 { parts.append(L("\(m) 分钟", "\(m) min")) }
+    if s > 0 { parts.append(L("\(s) 秒", "\(s) sec")) }
+    return parts.joined(separator: " ")
+}

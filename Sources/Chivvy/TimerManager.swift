@@ -23,7 +23,7 @@ final class TimerManager: ObservableObject {
 
     var hasLastTimer: Bool { lastMinutes > 0 || lastSeconds > 0 }
 
-    private var endDate: Date?
+    private(set) var endDate: Date?
     private var pausedRemaining: Int = 0
     private var timerCancellable: AnyCancellable?
     private let alertPanel = AlertPanel()
@@ -126,7 +126,7 @@ final class TimerManager: ObservableObject {
             updateDockBadge()
             completionCount += 1
             NotificationManager.shared.sendTimerComplete(note: finishedNote)
-            alertPanel.show(note: finishedNote)
+            alertPanel.show(.timer(note: finishedNote, seconds: totalSeconds))
         } else if remaining != remainingSeconds {
             remainingSeconds = remaining
             updateDockBadge()
