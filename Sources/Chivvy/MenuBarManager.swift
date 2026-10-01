@@ -236,7 +236,7 @@ struct MenuBarPopoverView: View {
     private var remindersSection: some View {
         VStack(alignment: .leading, spacing: 2) {
             if !sortedReminders.isEmpty {
-                sectionTitle(L("每日提醒", "Daily reminders"))
+                sectionTitle(L("提醒", "Reminders"))
                 ForEach(sortedReminders) { reminder in
                     reminderRow(reminder)
                 }
@@ -261,7 +261,7 @@ struct MenuBarPopoverView: View {
             } label: {
                 HStack(spacing: Theme.Space.s) {
                     rowIcon("bell")
-                    Text(reminderStore.reminders.isEmpty ? L("添加每日提醒…", "Add Daily Reminder…") : L("管理提醒…", "Manage Reminders…"))
+                    Text(reminderStore.reminders.isEmpty ? L("添加提醒…", "Add Reminder…") : L("管理提醒…", "Manage Reminders…"))
                 }
             }
             .buttonStyle(.hoverRow)
@@ -288,7 +288,7 @@ struct MenuBarPopoverView: View {
                     get: { reminder.isEnabled },
                     set: { isOn in
                         guard let index = reminderStore.reminders.firstIndex(where: { $0.id == reminder.id }) else { return }
-                        reminderStore.reminders[index].isEnabled = isOn && !reminderStore.reminders[index].weekdays.isEmpty
+                        reminderStore.reminders[index].isEnabled = isOn && reminderStore.reminders[index].canFire()
                     }
                 ))
                 .labelsHidden()

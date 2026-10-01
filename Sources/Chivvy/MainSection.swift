@@ -19,7 +19,7 @@ enum MainSection: String, CaseIterable {
     var title: String {
         switch self {
         case .timer: return L("倒计时", "Countdown")
-        case .reminders: return L("每日提醒", "Daily reminders")
+        case .reminders: return L("提醒", "Reminders")
         case .settings: return L("设置", "Settings")
         }
     }

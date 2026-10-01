@@ -16,7 +16,7 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 
 <p align="center">
   <img src="screenshots/main.png" width="400" alt="倒计时">
-  <img src="screenshots/reminders.png" width="400" alt="每日提醒">
+  <img src="screenshots/reminders.png" width="400" alt="提醒">
   <img src="screenshots/settings.png" width="400" alt="设置">
 </p>
 
@@ -29,8 +29,8 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 - 一键重复上次计时
 - 键盘操作：空格暂停/继续，Esc 取消，回车开始
 
-**每日提醒**
-- 最多 8 条，每条可以选择在星期几重复（每天、工作日、周末或任意组合）
+**提醒**
+- 最多 8 条，每条可以选择在星期几重复（每天、工作日、周末或任意组合），也可以设成「仅一次」：指定日期和时间，响过之后自动从列表移除
 - 到点弹出置顶提醒，全屏应用上也能看到，铃声循环直到你关掉（45 秒后自动停）
 - 可以稍后 5 或 10 分钟再提醒，同一次提醒最多推迟 3 次
 - 到点时电脑在睡眠，只要 30 分钟内唤醒，仍会补弹
@@ -40,7 +40,8 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 **语音输入**
 - 在任何地方按 **⌃⌘R**，说一句话：
   - 说相对时间（"一分钟后提醒我睡觉"）：直接开始倒计时
-  - 说具体时刻（"工作日早上八点半提醒我喝水"）：弹出确认卡片，保存后成为每日提醒
+  - 只说时刻或某一天（"7点钟提醒我睡觉"、"明天下午三点开会"、"周五下午三点交周报"）：直接添加一次性提醒，可以撤销
+  - 带重复词（"每周五下午三点"、"工作日早上八点半提醒我喝水"）：弹出确认卡片，保存后成为每日提醒
 - 快捷键可以在设置里修改
 
 **菜单栏**
@@ -49,7 +50,7 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 - 运行中的倒计时可直接暂停/取消，语音输入和提醒管理一键直达
 
 **其他**
-- 一个带侧栏的主窗口：倒计时、每日提醒、设置
+- 一个带侧栏的主窗口：倒计时、提醒、设置
 - 跟随系统浅色 / 深色外观
 - 中英文界面，在设置或菜单栏里一键切换；首次启动跟随系统语言
 - 窗口置顶、开机自启
@@ -67,13 +68,15 @@ Chivvy（原名 Tick）是一个简洁的 macOS 菜单栏小工具：倒计时 +
 | 一分钟后提醒我睡觉 | 开始 1 分钟倒计时，备注"睡觉" |
 | 半小时后叫我起来 | 开始 30 分钟倒计时，备注"起来" |
 | 倒计时 25 分钟 | 开始 25 分钟倒计时 |
+| 7点钟提醒我睡觉 | 一次性提醒：最近的 7 点（中午说就是今晚 19:00），备注"睡觉" |
+| 明天下午三点开会 | 一次性提醒：明天 15:00，备注"开会" |
 | 每天晚上十一点提醒我睡觉 | 每日提醒：23:00，每天，备注"睡觉" |
 | 工作日早上八点半提醒我喝水 | 每日提醒：08:30，周一到周五，备注"喝水" |
 | 每周一三五晚上九点去跑步 | 每日提醒：21:00，周一 / 三 / 五，备注"去跑步" |
 
 语音由 macOS 自带的语音识别转成文字，有中文离线模型时在本机完成。之后由 Chivvy 自己的规则解析出时间、星期和备注，不会发送给任何第三方服务。
 
-倒计时会直接开始，如果已经有倒计时在进行会先问你是否替换。每日提醒一定会先弹出确认卡片，听错的地方可以当场改。
+倒计时会直接开始，如果已经有倒计时在进行会先问你是否替换。一次性提醒直接添加，弹出的结果卡片上可以撤销。重复的每日提醒会先弹出确认卡片，听错的地方可以当场改。
 
 ### 快捷键
 
@@ -132,7 +135,16 @@ Sources/Chivvy/
 └── Localization.swift                  中英文文案
 ```
 
-运行测试：`./Tests/run.sh`。覆盖提醒调度、句子解析、快捷键处理、语言切换和弹窗文案，共 263 条断言。
+运行测试：`./Tests/run.sh`。覆盖提醒调度、句子解析、快捷键处理、语言切换和弹窗文案，共 451 条断言。
+
+### 更新日志 (v3.1)
+
+- **一次性提醒**：提醒可以设成「仅一次」，指定日期和时间，响过之后自动从列表移除
+- 语音只说时刻或某一天（"7点钟提醒我睡觉"、"明天下午三点开会"、"周五下午三点交周报"）会直接添加一次性提醒，可以撤销；没说上午还是下午时取最近的那个时间
+- 语音能听懂更多日期说法：后天、今晚、10月3号、十月三号、5号、下个月3号、下周一、下下周一、下周末
+- 带「每天 / 工作日 / 每周X」等重复词的句子仍然是重复提醒；日期没听准或时间已过时会弹出卡片让你核对
+- 侧栏的「每日提醒」改名为「提醒」
+- 修复"7点钟"的"钟"混进备注的问题
 
 ### 更新日志 (v3.0)
 
@@ -202,7 +214,7 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily po
 
 <p align="center">
   <img src="screenshots/main-en.png" width="400" alt="Countdown">
-  <img src="screenshots/reminders-en.png" width="400" alt="Daily reminders">
+  <img src="screenshots/reminders-en.png" width="400" alt="Reminders">
   <img src="screenshots/settings-en.png" width="400" alt="Settings">
 </p>
 
@@ -215,8 +227,8 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily po
 - Repeat the last timer with one click
 - Keyboard: Space pause / resume, Esc cancel, Return start
 
-**Daily reminders**
-- Up to 8 reminders, each repeating on the weekdays you pick (every day, weekdays, weekends, or any mix)
+**Reminders**
+- Up to 8 reminders, each repeating on the weekdays you pick (every day, weekdays, weekends, or any mix), or set to "Once": a date and time, removed from the list after it goes off
 - The alert floats above everything, including full-screen apps, and plays a sound until you dismiss it (auto-stops after 45 s)
 - Snooze 5 or 10 minutes, at most 3 times per reminder
 - If the Mac was asleep at reminder time, the reminder still shows on wake if it's less than 30 minutes late
@@ -226,7 +238,8 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily po
 **Voice input**
 - Press **⌃⌘R** anywhere and say one sentence in Chinese:
   - a relative time ("一分钟后提醒我睡觉") starts a countdown right away
-  - a time of day ("工作日早上八点半提醒我喝水") opens a confirm card, then saves a daily reminder
+  - just a time or a day ("7点钟提醒我睡觉", "明天下午三点开会", "周五下午三点交周报") adds a one-time reminder right away, with undo
+  - a time with a repeat ("每周五下午三点", "工作日早上八点半提醒我喝水") opens a confirm card, then saves a daily reminder
 - The shortcut can be changed in Settings
 
 **Menu bar**
@@ -235,7 +248,7 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily po
 - The running countdown with pause / cancel, plus voice input and reminders one click away
 
 **Other**
-- One main window with a sidebar: Countdown, Daily reminders, Settings
+- One main window with a sidebar: Countdown, Reminders, Settings
 - Follows the system's light / dark appearance
 - English / Chinese interface, switched in Settings or from the menu bar. It follows your system language on first launch.
 - Always on top, launch at login
@@ -253,13 +266,15 @@ Chivvy (formerly Tick) is a small macOS menu bar app for countdowns and daily po
 | 一分钟后提醒我睡觉 | 1-minute countdown, note "睡觉" |
 | 半小时后叫我起来 | 30-minute countdown, note "起来" |
 | 倒计时 25 分钟 | 25-minute countdown |
+| 7点钟提醒我睡觉 | One-time reminder at the nearest 7 o'clock (19:00 if said at noon), note "睡觉" |
+| 明天下午三点开会 | One-time reminder tomorrow at 15:00, note "开会" |
 | 每天晚上十一点提醒我睡觉 | Daily reminder at 23:00, every day, note "睡觉" |
 | 工作日早上八点半提醒我喝水 | Daily reminder at 08:30, Mon–Fri, note "喝水" |
 | 每周一三五晚上九点去跑步 | Daily reminder at 21:00, Mon / Wed / Fri, note "去跑步" |
 
 Speech is turned into text by macOS's built-in speech recognition, on-device when the Chinese model is available. Chivvy then works out the time, days and note with its own rules. Nothing is sent to a third-party service.
 
-A countdown starts right away, and Chivvy asks first if one is already running. A daily reminder always opens a confirm card, so you can fix anything that was misheard.
+A countdown starts right away, and Chivvy asks first if one is already running. A one-time reminder is added right away and the result card offers undo. A repeating daily reminder opens a confirm card first, so you can fix anything that was misheard.
 
 ### Keyboard Shortcuts
 
@@ -318,7 +333,16 @@ Sources/Chivvy/
 └── Localization.swift                  English / Chinese strings
 ```
 
-Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence parsing, shortcut handling, the language switch and the alert wording (263 assertions).
+Run the tests with `./Tests/run.sh`. They cover reminder scheduling, sentence parsing, shortcut handling, the language switch and the alert wording (451 assertions).
+
+### What's New (v3.1)
+
+- **One-time reminders**: set a reminder to "Once" with a date and time; it's removed from the list after it goes off.
+- Voice: just a time or a day ("7点钟提醒我睡觉", "明天下午三点开会", "周五下午三点交周报") adds a one-time reminder right away, with undo. Without 上午/下午, the nearest such time is used.
+- Voice understands more dates: 后天, 今晚, 10月3号, 十月三号, 5号, 下个月3号, 下周一, 下下周一, 下周末.
+- Sentences with a repeat word (每天, 工作日, 每周五…) still make a repeating reminder. A date that may be misheard, or a time that has passed, opens a card for you to check.
+- The "Daily reminders" page in the sidebar is now called "Reminders".
+- Fixed "钟" from "7点钟" ending up in the note.
 
 ### What's New (v3.0)
 

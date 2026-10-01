@@ -4,6 +4,7 @@ import SwiftUI
 
 /// Global shortcut → speak one sentence →
 /// - "一分钟后提醒我睡觉": starts a countdown right away
+/// - "7点钟提醒我睡觉": saved right away as a one-time reminder (with undo)
 /// - "每天晚上十一点提醒我睡觉": confirm card, then saved as a daily reminder
 @MainActor
 final class VoiceReminderController: ObservableObject {
@@ -160,24 +161,39 @@ final class VoiceReminderController: ObservableObject {
 
     private func confirmDaily(_ parsed: ParsedReminder, heard: String) {
         var draft = DailyReminder(
-            hour: parsed.hour ?? 23,
+            hour: parsed.hour ?? (parsed.isOneOff ? 9 : 23),
             minute: parsed.minute ?? 0,
             note: parsed.note,
-            weekdays: parsed.weekdays
+            weekdays: parsed.weekdays,
+            day: parsed.day
         )
         draft.isEnabled = true
 
+        // A one-off with a clear time needs no form, same as a countdown: save it and offer undo
+        if parsed.isOneOff, parsed.hour != nil, !parsed.isUnclear, draft.canFire() {
+            save(draft, heard: heard)
+            return
+        }
+
         var warning: String?
-        if parsed.isOneOff {
-            warning = L("Chivvy 暂时只支持每天重复的提醒，保存后会按下面的规则重复。", "Chivvy only supports repeating reminders for now; this one will repeat as set below.")
-        } else if parsed.hour == nil {
+        if parsed.hour == nil {
             warning = L("没听出时间，请选一下。", "No time heard. Please pick one.")
+        } else if !draft.canFire() {
+            warning = L("这个时间已经过了，请改一下。", "That time has already passed. Please change it.")
+        } else if parsed.isUnclear {
+            warning = L("日期可能没听对，请核对一下。", "The date may be off. Please check it.")
         }
 
         phase = .confirm(draft: draft, heard: heard, warning: warning)
     }
 
     func save(_ reminder: DailyReminder, heard: String) {
+        // The card may have sat open past the reminder's time
+        guard reminder.canFire() else {
+            phase = .confirm(draft: reminder, heard: heard,
+                             warning: L("这个时间已经过了，请改一下。", "That time has already passed. Please change it."))
+            return
+        }
         guard store.reminders.count < DailyReminder.maxCount else {
             phase = .failed(message: L("最多只能有 \(DailyReminder.maxCount) 条提醒，先在提醒窗口里删掉一些吧。",
                                                "You can have up to \(DailyReminder.maxCount) reminders. Delete some in the Reminders window first."), heard: heard)
@@ -302,8 +318,8 @@ private struct VoiceReminderView: View {
                     .buttonStyle(.chivvy(.secondary, size: .small))
                     .keyboardShortcut(.cancelAction)
             }
-            Text(transcript.isEmpty ? L("比如：每天晚上十一点提醒我睡觉 / 十分钟后提醒我关火",
-                                                   "Speak Mandarin, e.g. 每天晚上十一点提醒我睡觉 / 十分钟后提醒我关火") : transcript)
+            Text(transcript.isEmpty ? L("比如：晚上七点提醒我睡觉 / 每天早上八点喝水 / 十分钟后关火",
+                                                   "Speak Mandarin, e.g. 晚上七点提醒我睡觉 / 每天早上八点喝水 / 十分钟后关火") : transcript)
                 .font(.system(size: 17, weight: transcript.isEmpty ? .regular : .medium))
                 .foregroundStyle(transcript.isEmpty ? .tertiary : .primary)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .topLeading)
@@ -317,7 +333,7 @@ private struct VoiceReminderView: View {
     private func saved(_ reminder: DailyReminder, heard: String) -> some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             VoiceHeader(badge: StatusBadge(symbol: "checkmark", tone: .success), title: L("已添加提醒", "Reminder added"))
-            Text("\(reminder.timeLabel) · \(reminder.daysSummary()) · \(reminder.note.isEmpty ? L("无备注", "No note") : reminder.note)")
+            Text("\(reminder.timeLabel) · \(reminder.scheduleSummary()) · \(reminder.note.isEmpty ? L("无备注", "No note") : reminder.note)")
                 .font(.system(size: 17, weight: .medium).monospacedDigit())
             heardLine(heard)
             VoiceButtons {
@@ -470,7 +486,7 @@ private struct ConfirmCard: View {
                 Button(L("保存", "Save")) { controller.save(draft, heard: heard) }
                     .buttonStyle(.chivvy(.primary))
                     .keyboardShortcut(.defaultAction)
-                    .disabled(draft.weekdays.isEmpty)
+                    .disabled(!draft.canFire())
             }
             .padding(.top, Theme.Space.xs)
         }

@@ -1,5 +1,28 @@
 import Foundation
 
+/// A date with no time zone attached: "Oct 3" stays Oct 3 after flying to another time zone
+struct CalendarDay: Codable, Hashable {
+    var year: Int
+    var month: Int
+    var day: Int
+
+    init(year: Int, month: Int, day: Int) {
+        self.year = year
+        self.month = month
+        self.day = day
+    }
+
+    init(_ date: Date, calendar: Calendar = .current) {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        self.init(year: parts.year ?? 2001, month: parts.month ?? 1, day: parts.day ?? 1)
+    }
+
+    /// Midnight of this day in `calendar`'s time zone
+    func start(calendar: Calendar = .current) -> Date? {
+        calendar.date(from: DateComponents(year: year, month: month, day: day))
+    }
+}
+
 struct DailyReminder: Identifiable, Codable, Equatable {
     var id: UUID
     var hour: Int
@@ -8,6 +31,8 @@ struct DailyReminder: Identifiable, Codable, Equatable {
     /// Calendar weekdays: 1 = Sunday … 7 = Saturday
     var weekdays: Set<Int>
     var isEnabled: Bool
+    /// Set for a one-time reminder: the day it fires, `weekdays` is ignored. nil = repeating.
+    var day: CalendarDay?
 
     static let everyDay: Set<Int> = Set(1...7)
     static let weekdaysOnly: Set<Int> = [2, 3, 4, 5, 6]
@@ -16,13 +41,27 @@ struct DailyReminder: Identifiable, Codable, Equatable {
     static let maxCount = 8
 
     init(id: UUID = UUID(), hour: Int, minute: Int, note: String = "",
-         weekdays: Set<Int> = everyDay, isEnabled: Bool = true) {
+         weekdays: Set<Int> = everyDay, isEnabled: Bool = true, day: CalendarDay? = nil) {
         self.id = id
         self.hour = hour
         self.minute = minute
         self.note = note
         self.weekdays = weekdays
         self.isEnabled = isEnabled
+        self.day = day
+    }
+
+    var isOneOff: Bool { day != nil }
+
+    /// The one moment a one-off fires; nil for repeating reminders
+    func oneOffDate(calendar: Calendar = .current) -> Date? {
+        day?.start(calendar: calendar).flatMap { calendar.date(bySettingHour: hour, minute: minute, second: 0, of: $0) }
+    }
+
+    /// Whether turning it on would ever fire: a repeating one needs days, a one-off a time still ahead
+    func canFire(now: Date = Date(), calendar: Calendar = .current) -> Bool {
+        if isOneOff { return oneOffDate(calendar: calendar).map { $0 > now } ?? false }
+        return !weekdays.isEmpty
     }
 
     var timeLabel: String {
@@ -30,6 +69,7 @@ struct DailyReminder: Identifiable, Codable, Equatable {
     }
 
     func daysSummary(calendar: Calendar = .current) -> String {
+        if isOneOff { return L("仅一次", "Once") }
         switch weekdays {
         case Self.everyDay: return L("每天", "Every day")
         case Self.weekdaysOnly: return L("工作日", "Weekdays")
@@ -62,6 +102,9 @@ struct DailyReminder: Identifiable, Codable, Equatable {
     /// Earliest fire time strictly after `date`, or nil if the reminder never fires.
     func nextFireDate(after date: Date, calendar: Calendar = .current) -> Date? {
         guard isEnabled else { return nil }
+        if isOneOff {
+            return oneOffDate(calendar: calendar).flatMap { $0 > date ? $0 : nil }
+        }
         return weekdays.compactMap { weekday in
             calendar.nextDate(
                 after: date,
@@ -73,13 +116,23 @@ struct DailyReminder: Identifiable, Codable, Equatable {
 }
 
 extension DailyReminder {
-    /// "今天" / "明天" / "周三" for a coming occurrence
+    /// "今天" / "明天" / "周三" for a coming occurrence, "10月8日" a week or more away
     static func relativeDayLabel(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: now),
                                            to: calendar.startOfDay(for: date)).day ?? 0
         if days == 0 { return L("今天", "Today") }
         if days == 1 { return L("明天", "Tomorrow") }
-        return shortName(weekday: calendar.component(.weekday, from: date))
+        if (2..<7).contains(days) { return shortName(weekday: calendar.component(.weekday, from: date)) }
+        let parts = calendar.dateComponents([.month, .day], from: date)
+        let month = parts.month ?? 1, day = parts.day ?? 1
+        let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        return L("\(month)月\(day)日", "\(months[month - 1]) \(day)")
+    }
+
+    /// When it fires, in words: "今天" for a one-off, "工作日" for a repeating one
+    func scheduleSummary(now: Date = Date(), calendar: Calendar = .current) -> String {
+        guard let fire = oneOffDate(calendar: calendar) else { return daysSummary(calendar: calendar) }
+        return Self.relativeDayLabel(fire, now: now, calendar: calendar)
     }
 
     /// Like `relativeDayLabel`, but "13 分钟后" within the hour
@@ -105,6 +158,16 @@ enum ReminderSchedule {
         reminders
             .compactMap { r in r.nextFireDate(after: date, calendar: calendar).map { ScheduledReminder(reminder: r, date: $0) } }
             .min { $0.date < $1.date }
+    }
+
+    /// One-offs that are done: their time has passed and they were shown (`fired`), or they're too old
+    /// to still be shown as missed. Never one that's `busy` (alert on screen or snooze pending).
+    static func prunableOneOffs(in reminders: [DailyReminder], now: Date, grace: TimeInterval,
+                                fired: Set<UUID>, busy: Set<UUID>, calendar: Calendar = .current) -> [UUID] {
+        reminders.compactMap { r in
+            guard let fire = r.oneOffDate(calendar: calendar), fire <= now, !busy.contains(r.id) else { return nil }
+            return fired.contains(r.id) || fire < now.addingTimeInterval(-grace) ? r.id : nil
+        }
     }
 
     /// Where the first check after launch starts looking back from.

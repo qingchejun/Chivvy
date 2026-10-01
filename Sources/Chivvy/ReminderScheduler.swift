@@ -28,9 +28,10 @@ final class ReminderStore: ObservableObject {
     }
 }
 
-/// Fires daily reminders two ways:
+/// Fires reminders two ways:
 /// - In-app: full alert panel + looping sound while Chivvy is running.
-/// - System: repeating calendar notifications, delivered by macOS even if Chivvy has quit.
+/// - System: calendar notifications (repeating, or one-shot for one-offs), delivered by macOS even if Chivvy has quit.
+/// One-offs are removed from the list once they've fired and nothing (alert, snooze) still needs them.
 @MainActor
 final class ReminderScheduler: ObservableObject {
     static let shared = ReminderScheduler()
@@ -67,6 +68,8 @@ final class ReminderScheduler: ObservableObject {
         }
     }
     private var snoozeTimers: [UUID: Timer] = [:]
+    /// One-offs whose alert has been shown this run; they can go once nothing still needs them
+    private var firedOneOffs = Set<UUID>()
     private var cancellables = Set<AnyCancellable>()
 
     private init() {}
@@ -86,6 +89,8 @@ final class ReminderScheduler: ObservableObject {
                 for id in self.snoozes.keys where !newValue.contains(where: { $0.id == id && $0.isEnabled }) {
                     self.cancelSnooze(id)
                 }
+                // Deleted, or switched to repeating while its alert was up
+                self.firedOneOffs = self.firedOneOffs.filter { id in newValue.contains { $0.id == id && $0.isOneOff } }
                 self.reschedule(newValue)
             }
             .store(in: &cancellables)
@@ -137,17 +142,35 @@ final class ReminderScheduler: ObservableObject {
         for occurrence in due {
             fire(occurrence.reminder)
         }
+        removeFinishedOneOffs()
         reschedule(store.reminders)
+    }
+
+    /// Drops one-offs that have been shown (or are too old to be shown as missed),
+    /// unless their alert is still up or a snooze is pending
+    private func removeFinishedOneOffs() {
+        let busy = Set(snoozes.keys).union(alertPanels.filter { $0.value.isShowing }.map(\.key))
+        let finished = Set(ReminderSchedule.prunableOneOffs(in: store.reminders, now: Date(), grace: missedGrace,
+                                                             fired: firedOneOffs, busy: busy))
+        guard !finished.isEmpty else { return }
+        store.reminders.removeAll { finished.contains($0.id) }
+        for id in finished {
+            alertPanels[id] = nil
+            firedOneOffs.remove(id)
+        }
     }
 
     private func reschedule(_ reminders: [DailyReminder]) {
         fireTimer?.invalidate()
         fireTimer = nil
 
-        upcoming = ReminderSchedule.next(in: reminders, after: Date())
-        guard let upcoming else { return }
+        let now = Date()
+        upcoming = ReminderSchedule.next(in: reminders, after: now)
+        // A past one-off that was never shown (e.g. quit with its alert up) can go once its grace window ends
+        let cleanup = reminders.compactMap { $0.oneOffDate()?.addingTimeInterval(missedGrace + 1) }.filter { $0 > now }.min()
+        guard let wake = [upcoming?.date, cleanup].compactMap({ $0 }).min() else { return }
 
-        let timer = Timer(fire: upcoming.date, interval: 0, repeats: false) { [weak self] _ in
+        let timer = Timer(fire: wake, interval: 0, repeats: false) { [weak self] _ in
             Task { @MainActor in self?.check() }
         }
         timer.tolerance = 1
@@ -157,10 +180,15 @@ final class ReminderScheduler: ObservableObject {
 
     /// - Parameter snoozeCount: snoozes already used for this occurrence (0 = on time)
     private func fire(_ reminder: DailyReminder, snoozeCount: Int = 0) {
+        if reminder.isOneOff { firedOneOffs.insert(reminder.id) }
         let state = SnoozeState(reminderID: reminder.id, fireDate: Date(), count: snoozeCount)
         let options = state.canSnoozeAgain ? snoozeOptions : []
         let panel = alertPanels[reminder.id] ?? AlertPanel()
         alertPanels[reminder.id] = panel
+        // A snooze button closes the panel before scheduling the snooze; look after both have run
+        panel.onClose = { [weak self] in
+            DispatchQueue.main.async { self?.removeFinishedOneOffs() }
+        }
         panel.show(
             AlertText.reminder(reminder, snoozeCount: snoozeCount),
             snoozeActions: options.map { minutes in
@@ -181,7 +209,8 @@ final class ReminderScheduler: ObservableObject {
     }
 
     private static func body(for reminder: DailyReminder) -> String {
-        reminder.note.isEmpty ? L("每日提醒", "Daily reminder") : reminder.note
+        guard reminder.note.isEmpty else { return reminder.note }
+        return reminder.isOneOff ? L("提醒", "Reminder") : L("每日提醒", "Daily reminder")
     }
 
     // MARK: - Snooze
@@ -229,7 +258,10 @@ final class ReminderScheduler: ObservableObject {
         snoozes[state.reminderID] = nil
         // Use the current version; skip if it was deleted or turned off meanwhile
         guard let current = store.reminders.first(where: { $0.id == state.reminderID }),
-              current.isEnabled else { return }
+              current.isEnabled else {
+            removeFinishedOneOffs()
+            return
+        }
         fire(current, snoozeCount: state.count)
     }
 
@@ -258,7 +290,7 @@ final class ReminderScheduler: ObservableObject {
 
     // MARK: - System notifications (backup when Chivvy isn't running)
 
-    /// Suffix 0 = every-day request, 1…7 = per-weekday requests
+    /// Suffix 0 = every-day or one-off request, 1…7 = per-weekday requests
     private nonisolated static func identifiers(for reminder: DailyReminder) -> [String] {
         (0...7).map { "\(notificationPrefix)\(reminder.id.uuidString)-\($0)" }
     }
@@ -274,6 +306,18 @@ final class ReminderScheduler: ObservableObject {
             content.title = Self.dueTitle(reminder)
             content.body = Self.body(for: reminder)
             content.sound = .default
+
+            if let fire = reminder.oneOffDate() {
+                // One shot at that date and time (suffix 0); nothing to add once it has passed
+                guard fire > Date() else { continue }
+                let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+                center.add(UNNotificationRequest(
+                    identifier: "\(Self.notificationPrefix)\(reminder.id.uuidString)-0",
+                    content: content,
+                    trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
+                ))
+                continue
+            }
 
             // One request for every day, otherwise one per weekday (pending requests are capped at 64)
             let weekdays: [Int?] = reminder.weekdays == DailyReminder.everyDay ? [nil] : reminder.weekdays.map { $0 }

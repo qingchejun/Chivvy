@@ -131,7 +131,7 @@ struct RemindersPane: View {
 
     private var list: some View {
         List(selection: $selection) {
-            ForEach(store.reminders.sorted { ($0.hour, $0.minute) < ($1.hour, $1.minute) }) { reminder in
+            ForEach(store.reminders.sorted(by: Self.listOrder)) { reminder in
                 ReminderListRow(reminder: reminder,
                                 isNext: scheduler.upcoming?.reminder.id == reminder.id,
                                 isOn: enabledBinding(for: reminder.id))
@@ -192,6 +192,16 @@ struct RemindersPane: View {
 
     // MARK: Helpers
 
+    /// Repeating reminders by time of day, then one-offs by when they fire
+    private static func listOrder(_ a: DailyReminder, _ b: DailyReminder) -> Bool {
+        switch (a.oneOffDate(), b.oneOffDate()) {
+        case let (x?, y?): return x < y
+        case (nil, _?): return true
+        case (_?, nil): return false
+        case (nil, nil): return (a.hour, a.minute) < (b.hour, b.minute)
+        }
+    }
+
     private func enabledBinding(for id: UUID) -> Binding<Bool> {
         Binding(
             get: { store.reminders.first { $0.id == id }?.isEnabled ?? false },
@@ -203,8 +213,8 @@ struct RemindersPane: View {
         store.reminders = store.reminders.map { r in
             guard ids.contains(r.id) else { return r }
             var r = r
-            // A reminder with no days can't fire; leave it off until edited
-            r.isEnabled = enabled && !r.weekdays.isEmpty
+            // A reminder with no days, or a one-off whose time has passed, can't fire; leave it off until edited
+            r.isEnabled = enabled && r.canFire()
             return r
         }
     }
@@ -268,6 +278,8 @@ private struct ReminderEditSheet: View {
     let onDelete: (DailyReminder) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var draft: DailyReminder
+    /// Set when Save finds the time has passed meanwhile; the state change re-renders the form's warning
+    @State private var checkedAt = Date()
 
     init(reminder: DailyReminder, isNew: Bool,
          onSave: @escaping (DailyReminder) -> Void, onDelete: @escaping (DailyReminder) -> Void) {
@@ -297,12 +309,18 @@ private struct ReminderEditSheet: View {
                     .buttonStyle(.chivvy(.secondary))
                     .keyboardShortcut(.cancelAction)
                 Button(L("保存", "Save")) {
+                    // The sheet may have sat open past a one-off's time
+                    guard draft.canFire() else {
+                        checkedAt = Date()
+                        return
+                    }
                     onSave(draft)
                     dismiss()
                 }
                 .buttonStyle(.chivvy(.primary))
                 .keyboardShortcut(.defaultAction)
-                .disabled(draft.weekdays.isEmpty)
+                // Reading checkedAt makes a failed Save re-render this
+                .disabled(!draft.canFire(now: max(Date(), checkedAt)))
             }
         }
         .padding(20)
@@ -448,11 +466,22 @@ struct ShortcutRecorder: View {
 
 // MARK: - Reminder Form
 
-/// Time, note and repeat days; shared by the edit sheet and the voice confirm card
+/// Time, note, and repeat days or the one day; shared by the edit sheet and the voice confirm card
 struct ReminderForm: View {
     @Binding var draft: DailyReminder
 
+    private enum Mode { case repeating, once }
+
     private var calendar: Calendar { .current }
+    private var today: Date { calendar.startOfDay(for: Date()) }
+
+    /// The day a one-off falls on; changing it keeps the time
+    private var day: Binding<Date> {
+        Binding(
+            get: { draft.day?.start(calendar: calendar) ?? today },
+            set: { draft.day = CalendarDay($0, calendar: calendar) }
+        )
+    }
 
     private var time: Binding<Date> {
         Binding(
@@ -479,23 +508,67 @@ struct ReminderForm: View {
                     .textFieldStyle(.roundedBorder)
             }
 
-            HStack(spacing: 6) {
-                ForEach(DailyReminder.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
-                    dayChip(weekday)
-                }
-            }
+            SegmentedChips(
+                items: [Mode.repeating, .once],
+                selection: draft.isOneOff ? .once : .repeating,
+                label: { $0 == .once ? L("仅一次", "Once") : L("重复", "Repeat") },
+                onSelect: setMode,
+                height: 22
+            )
 
-            HStack(spacing: Theme.Space.xs) {
-                quickDays(L("每天", "Every day"), DailyReminder.everyDay)
-                quickDays(L("工作日", "Weekdays"), DailyReminder.weekdaysOnly)
-                quickDays(L("周末", "Weekends"), DailyReminder.weekendsOnly)
-                if draft.weekdays.isEmpty {
-                    Text(L("至少选择一天", "Pick at least one day"))
-                        .font(Theme.Font.caption)
-                        .foregroundStyle(Theme.brandText)
-                        .padding(.leading, Theme.Space.xs)
+            if draft.isOneOff {
+                onceRow
+            } else {
+                HStack(spacing: 6) {
+                    ForEach(DailyReminder.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
+                        dayChip(weekday)
+                    }
+                }
+
+                HStack(spacing: Theme.Space.xs) {
+                    quickDays(L("每天", "Every day"), DailyReminder.everyDay)
+                    quickDays(L("工作日", "Weekdays"), DailyReminder.weekdaysOnly)
+                    quickDays(L("周末", "Weekends"), DailyReminder.weekendsOnly)
+                    if draft.weekdays.isEmpty {
+                        Text(L("至少选择一天", "Pick at least one day"))
+                            .font(Theme.Font.caption)
+                            .foregroundStyle(Theme.brandText)
+                            .padding(.leading, Theme.Space.xs)
+                    }
                 }
             }
+        }
+    }
+
+    private var onceRow: some View {
+        HStack(spacing: Theme.Space.s) {
+            DatePicker(L("日期", "Date"), selection: day, in: today..., displayedComponents: .date)
+                .labelsHidden()
+                .fixedSize()
+            if draft.canFire() {
+                Text(draft.scheduleSummary())
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(L("这个时间已经过了", "That time has passed"))
+                    .font(Theme.Font.caption)
+                    .foregroundStyle(Theme.brandText)
+            }
+        }
+        .frame(height: 28)
+    }
+
+    private func setMode(_ mode: Mode) {
+        switch mode {
+        case .once:
+            guard draft.day == nil else { return }
+            // Today if the time is still ahead, otherwise tomorrow
+            let fireToday = calendar.date(bySettingHour: draft.hour, minute: draft.minute, second: 0, of: today)
+            let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? today
+            draft.day = CalendarDay((fireToday ?? today) > Date() ? today : tomorrow, calendar: calendar)
+        case .repeating:
+            draft.day = nil
+            if draft.weekdays.isEmpty { draft.weekdays = DailyReminder.everyDay }
         }
     }
 

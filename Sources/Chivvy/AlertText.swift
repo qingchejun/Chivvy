@@ -16,7 +16,7 @@ struct AlertText: Equatable {
     let snooze: Snooze?
 
     static func reminder(_ reminder: DailyReminder, snoozeCount: Int) -> AlertText {
-        let kind = L("每日提醒", "Daily reminder")
+        let kind = reminder.isOneOff ? L("提醒", "Reminder") : L("每日提醒", "Daily reminder")
         let hasNote = !reminder.note.isEmpty
         return AlertText(
             eyebrow: hasNote ? "\(reminder.timeLabel) · \(kind)" : kind,

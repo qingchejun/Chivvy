@@ -17,7 +17,7 @@ private let cases: [(String, String?, Set<Int>, String)] = [
     ("早上七点二十起床", "07:20", DailyReminder.everyDay, "起床"),
     ("晚上八点零五分吃药", "20:05", DailyReminder.everyDay, "吃药"),
     ("两点喝水", "02:00", DailyReminder.everyDay, "喝水"),
-    // No period word: keep the literal hour, the confirm card lets the user fix it
+    // No period word: the nearest such hour; at 00:30 (see testSentences) that's the morning one
     ("提醒我十一点睡觉", "11:00", DailyReminder.everyDay, "睡觉"),
     ("叫我9点开会", "09:00", DailyReminder.everyDay, "开会"),
     // Repeat rules
@@ -42,12 +42,16 @@ private func label(_ p: ParsedReminder) -> String? {
 }
 
 private func testSentences() {
+    // Just after midnight, so the nearest "9点" is 09:00 and no time today has passed yet
+    let now = date(2026, 9, 30, 0, 30)
     for (text, time, days, note) in cases {
-        let p = ReminderParser.parse(text)
+        let p = ReminderParser.parse(text, now: now, calendar: shanghai)
         expect(label(p) == time, "\(text): time \(String(describing: label(p))) ≠ \(String(describing: time))")
         expect(p.weekdays == days, "\(text): days \(p.weekdays.sorted()) ≠ \(days.sorted())")
         expect(p.note == note, "\(text): note \"\(p.note)\" ≠ \"\(note)\"")
-        expect(!p.isOneOff, "\(text): not one-off")
+        // Repeating only when the sentence names a repeat; any other time is one-off
+        let repeats = text.range(of: "每|天天|工作日|周|星期", options: .regularExpression) != nil
+        expect(p.isOneOff == (!repeats && time != nil), "\(text): one-off should be \(!repeats && time != nil)")
     }
 }
 

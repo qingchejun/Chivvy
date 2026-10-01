@@ -13,6 +13,10 @@ final class AlertPanel {
     private static var visibleCount = 0
     private static let width: CGFloat = 320
 
+    /// Called after the panel goes away, however it was dismissed
+    var onClose: (() -> Void)?
+    var isShowing: Bool { panel != nil }
+
     /// `snoozeActions` show as grey buttons under "知道了"; each also dismisses the panel.
     func show(_ text: AlertText, snoozeActions: [AlertAction] = []) {
         close()
@@ -69,6 +73,7 @@ final class AlertPanel {
         self.panel = nil
         Self.visibleCount -= 1
         NotificationManager.shared.stopAlertSound(for: self)
+        onClose?()
     }
 }
 
