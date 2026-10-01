@@ -2,6 +2,8 @@
 
 <h1 align="center">Chivvy</h1>
 
+<p align="center"><b><a href="https://qingchejun.github.io/Chivvy/">Website · 产品主页</a></b></p>
+
 <p align="center"><a href="#english">English</a> | <a href="#中文">中文</a></p>
 
 ---
