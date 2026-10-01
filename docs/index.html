@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en" data-lang="en">
+<html lang="zh-CN" data-lang="zh">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chivvy · Reminders you can't scroll past</title>
+<title>Chivvy · 躲不掉的提醒</title>
 <meta name="description" content="Chivvy is a macOS menu bar app for countdowns and daily pop-up reminders that float over everything until you act. 倒计时 + 每日弹窗提醒的 macOS 菜单栏小工具。">
 <link rel="icon" href="img/icon.png">
 <meta property="og:title" content="Chivvy">
@@ -307,12 +307,13 @@ footer a.author:hover { color: #FFB066; text-decoration-color: currentColor; }
   function apply(lang) {
     root.setAttribute('data-lang', lang);
     root.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+    document.title = lang === 'zh' ? 'Chivvy · 躲不掉的提醒' : 'Chivvy · Reminders you can\u2019t scroll past';
   }
   var saved = null;
   try { saved = localStorage.getItem('chivvy-lang'); } catch (e) {}
   var hash = location.hash === '#zh' ? 'zh' : (location.hash === '#en' ? 'en' : null);
-  var browser = (navigator.language || '').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
-  apply(hash || saved || browser);
+  // Chinese by default; English only via the toggle (remembered) or #en
+  apply(hash || saved || 'zh');
   document.getElementById('lang-toggle').addEventListener('click', function () {
     var next = root.getAttribute('data-lang') === 'zh' ? 'en' : 'zh';
     apply(next);
