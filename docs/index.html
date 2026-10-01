@@ -105,6 +105,8 @@ footer { border-top: 1px solid var(--line); padding: 28px 0 36px; font-size: 13p
 footer .wrap { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
 footer .flinks { display: flex; gap: 24px; }
 footer a { color: var(--faint); }
+footer a.author { color: var(--soft); text-decoration: underline; text-decoration-color: rgba(255,255,255,0.25); text-underline-offset: 3px; }
+footer a.author:hover { color: #FFB066; text-decoration-color: currentColor; }
 
 /* Phone */
 @media (max-width: 760px) {
@@ -282,7 +284,7 @@ footer a { color: var(--faint); }
 
 <footer>
   <div class="wrap">
-    <span><span lang="en">© 2026 青澈君 · Free for personal and noncommercial use (PolyForm Noncommercial 1.0.0)</span><span lang="zh">© 2026 青澈君 · 个人与非商业使用免费（PolyForm Noncommercial 1.0.0）</span></span>
+    <span><span lang="en">© 2026 <a href="https://qingchejun.com" class="author">青澈君</a> · Free for personal and noncommercial use (PolyForm Noncommercial 1.0.0)</span><span lang="zh">© 2026 <a href="https://qingchejun.com" class="author">青澈君</a> · 个人与非商业使用免费（PolyForm Noncommercial 1.0.0）</span></span>
     <div class="flinks">
       <a href="https://github.com/qingchejun/Chivvy">GitHub</a>
       <a href="https://github.com/qingchejun/Chivvy/blob/main/LICENSE"><span lang="en">License</span><span lang="zh">许可证</span></a>
