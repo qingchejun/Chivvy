@@ -68,7 +68,11 @@ struct TimerPane: View {
             .padding(.bottom, 20)
             .frame(maxHeight: .infinity)
         }
-        .onAppear(perform: installKeyMonitor)
+        .onAppear {
+            installKeyMonitor()
+            // AppKit focuses the note field on open; start unfocused so Space works and no input popup shows
+            DispatchQueue.main.async { MainWindowRouter.shared.window?.makeFirstResponder(nil) }
+        }
         .onDisappear(perform: removeKeyMonitor)
         .sheet(isPresented: $showPresetEditor) {
             PresetEditorView(store: presetStore)
@@ -100,7 +104,7 @@ struct TimerPane: View {
     private var ringCaption: String {
         switch timer.timerState {
         case .idle:
-            return input.isValid ? L("准备好了", "Ready") : L("选个预设，或输入时间", "Pick a preset or enter a time")
+            return input.isValid ? L("准备好了", "Ready") : L("选个预设，或输入时间", "Pick a preset or a time")
         case .running:
             return timer.note.isEmpty ? L("进行中", "Running") : timer.note
         case .paused:

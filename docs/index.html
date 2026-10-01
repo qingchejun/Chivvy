@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chivvy · Reminders you can't scroll past</title>
+<meta name="description" content="Chivvy is a macOS menu bar app for countdowns and daily pop-up reminders that float over everything until you act. 倒计时 + 每日弹窗提醒的 macOS 菜单栏小工具。">
+<link rel="icon" href="img/icon.png">
+<meta property="og:title" content="Chivvy">
+<meta property="og:description" content="Reminders you can't scroll past. A macOS menu bar app for countdowns and daily pop-up reminders.">
+<meta property="og:image" content="https://qingchejun.github.io/Chivvy/img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #0B0C10;
+  --card: #14161C;
+  --line: rgba(255,255,255,0.06);
+  --text: #F5F5F7;
+  --muted: #A1A1A6;
+  --faint: #86868B;
+  --soft: #C7C7CC;
+  --brand: #FF8A1F;
+  --on-brand: #1A0D00;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; line-height: 1.5;
+}
+a { color: var(--text); text-decoration: none; }
+a:hover { color: #FFB066; }
+img { max-width: 100%; height: auto; display: block; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+
+/* Language: show only the current one */
+html[data-lang="en"] [lang="zh"], html[data-lang="zh"] [lang="en"]:not(html) { display: none !important; }
+
+/* Nav */
+nav { border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; background: rgba(11,12,16,0.82); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px); }
+nav .wrap { height: 64px; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; }
+.brand img { width: 30px; height: 30px; }
+.links { display: flex; align-items: center; gap: 28px; font-size: 14px; }
+.links a { color: var(--muted); }
+.links a:hover { color: var(--text); }
+.lang-btn { font: inherit; font-size: 14px; color: var(--muted); background: none; border: 1px solid rgba(255,255,255,0.14); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.lang-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.3); }
+.pill { background: var(--text); color: var(--bg) !important; font-weight: 600; border-radius: 999px; padding: 8px 16px; }
+
+/* Hero */
+.hero { padding: 104px 0 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.eyebrow { font-family: var(--mono); font-size: 13px; color: var(--brand); letter-spacing: 0.08em; text-transform: uppercase; }
+h1 { margin: 0; font-size: clamp(44px, 7vw, 88px); line-height: 1.03; font-weight: 700; letter-spacing: -0.035em; max-width: 1000px; text-wrap: balance; }
+.lead { margin: 0; font-size: clamp(17px, 1.8vw, 22px); color: var(--muted); max-width: 680px; text-wrap: pretty; }
+.cta { display: flex; align-items: center; gap: 24px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+.btn { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; border-radius: 999px; padding: 15px 28px; }
+.btn-primary { background: var(--brand); color: var(--on-brand) !important; }
+.btn-primary:hover { background: #FF9A3D; }
+.btn-ghost { border: 1px solid rgba(255,255,255,0.2); }
+.fine { font-size: 13px; color: var(--faint); }
+.stage { position: relative; width: 100%; max-width: 1200px; height: 560px; margin-top: 56px; }
+.screen { position: absolute; inset: 0; border-radius: 28px 28px 0 0; background: #121419; border: 1px solid rgba(255,255,255,0.07); border-bottom: none; overflow: hidden; }
+.screen .bar { height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.screen .dot { width: 12px; height: 12px; border-radius: 50%; background: #2A2D35; }
+.screen .file { margin-left: 16px; font-family: var(--mono); font-size: 12px; color: #4A4E58; }
+.screen .lines { padding: 36px 56px; display: flex; flex-direction: column; gap: 16px; }
+.screen .lines span { height: 12px; border-radius: 6px; background: #1E2129; }
+.alert { position: absolute; left: 50%; top: 70px; width: 480px; transform: translateX(-50%); filter: drop-shadow(0 30px 80px rgba(255,138,31,0.28)); }
+
+/* Definition */
+.define { margin-top: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 64px 0; }
+.define .wrap { display: flex; align-items: baseline; justify-content: center; gap: 24px; flex-wrap: wrap; }
+.define .word { font-size: 40px; font-weight: 600; font-style: italic; letter-spacing: -0.02em; }
+.define .ipa { font-family: var(--mono); font-size: 16px; color: var(--faint); }
+.define .meaning { font-size: 22px; color: var(--soft); }
+
+/* Sections */
+section.block { padding: 128px 0 0; }
+h2 { margin: 0; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; font-weight: 700; letter-spacing: -0.03em; text-wrap: balance; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 56px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 36px; display: flex; flex-direction: column; gap: 14px; }
+.card h3 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.card p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--muted); }
+.split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 72px; align-items: center; }
+.split .copy { display: flex; flex-direction: column; gap: 20px; }
+.split .copy p { margin: 0; font-size: 18px; line-height: 1.6; color: var(--muted); }
+.split .shot { display: flex; justify-content: center; }
+.split .shot img { width: 100%; max-width: 600px; }
+.checks { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.checks div { display: flex; align-items: center; gap: 12px; font-size: 15px; color: var(--soft); }
+
+/* Download */
+#download { margin-top: 144px; padding: 112px 0; border-top: 1px solid var(--line); text-align: center; background: radial-gradient(600px 300px at 50% 0%, rgba(255,138,31,0.10), rgba(255,138,31,0)); }
+#download .wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+#download .icon { width: 128px; height: 128px; }
+#download .buttons { display: flex; gap: 16px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+#download .note { margin: 8px 0 0; font-size: 14px; color: var(--faint); max-width: 560px; }
+code { font-family: var(--mono); font-size: 13px; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 6px; color: var(--soft); }
+
+footer { border-top: 1px solid var(--line); padding: 28px 0 36px; font-size: 13px; color: var(--faint); }
+footer .wrap { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+footer .flinks { display: flex; gap: 24px; }
+footer a { color: var(--faint); }
+
+/* Phone */
+@media (max-width: 760px) {
+  .wrap { padding: 0 20px; }
+  .links .hide-sm { display: none; }
+  .links { gap: 14px; }
+  .hero { padding-top: 56px; gap: 18px; }
+  .stage { height: 330px; margin-top: 32px; }
+  .screen .lines { padding: 24px 22px; gap: 10px; }
+  .screen .lines span { height: 8px; }
+  .screen .file { display: none; }
+  .alert { width: 300px; top: 30px; }
+  .define { padding: 40px 0; }
+  .define .wrap { justify-content: flex-start; gap: 10px 14px; }
+  .define .word { font-size: 30px; }
+  .define .meaning { font-size: 17px; }
+  section.block { padding-top: 72px; }
+  .cards { grid-template-columns: 1fr; gap: 16px; margin-top: 28px; }
+  .card { padding: 24px; border-radius: 20px; }
+  .split { grid-template-columns: 1fr; gap: 28px; }
+  .split .shot { order: 2; }
+  .split .copy p { font-size: 16px; }
+  #download { margin-top: 80px; padding: 64px 0; }
+  #download .icon { width: 96px; height: 96px; }
+  #download .buttons { flex-direction: column; width: 100%; }
+  #download .buttons .btn { justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="img/icon.png" alt="">Chivvy</a>
+    <div class="links">
+      <a class="hide-sm" href="#features"><span lang="en">Features</span><span lang="zh">功能</span></a>
+      <a class="hide-sm" href="#voice"><span lang="en">Voice</span><span lang="zh">语音</span></a>
+      <a href="https://github.com/qingchejun/Chivvy">GitHub</a>
+      <button class="lang-btn" type="button" id="lang-toggle" aria-label="Switch language / 切换语言"><span lang="en">中文</span><span lang="zh">English</span></button>
+      <a class="pill hide-sm" href="#download"><span lang="en">Download</span><span lang="zh">下载</span></a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <div class="wrap hero">
+    <div class="eyebrow"><span lang="en">For macOS · menu bar</span><span lang="zh">macOS · 菜单栏小工具</span></div>
+    <h1><span lang="en">Reminders you can’t scroll past.</span><span lang="zh">躲不掉的提醒。</span></h1>
+    <p class="lead">
+      <span lang="en">When it’s time, Chivvy puts the reminder on top of everything, full‑screen apps included, and keeps chiming until you deal with it.</span>
+      <span lang="zh">时间一到，Chivvy 把提醒弹到所有窗口最上面，全屏应用也挡不住，铃声一直响到你处理为止。</span>
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#download">
+        <svg width="16" height="18" viewBox="0 0 16 18" fill="none" aria-hidden="true"><path d="M8 1v11m0 0l-4.5-4.5M8 12l4.5-4.5M1.5 16.5h13" stroke="#1A0D00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span lang="en">Download for Mac</span><span lang="zh">下载 Mac 版</span>
+      </a>
+      <a href="https://github.com/qingchejun/Chivvy" style="font-size: 17px"><span lang="en">View source ›</span><span lang="zh">查看源码 ›</span></a>
+    </div>
+    <div class="fine"><span lang="en">Free for personal use · macOS 13 or later · Apple Silicon and Intel</span><span lang="zh">个人使用免费 · macOS 13 及以上 · 支持 Apple 芯片和 Intel</span></div>
+
+    <div class="stage" aria-hidden="true">
+      <div class="screen">
+        <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="file">thesis_final_v7.md — full screen</span></div>
+        <div class="lines">
+          <span style="width: 62%"></span><span style="width: 88%"></span><span style="width: 74%"></span><span style="width: 81%"></span><span style="width: 40%"></span>
+          <span style="width: 0; margin-top: 12px"></span>
+          <span style="width: 70%"></span><span style="width: 92%"></span><span style="width: 66%"></span><span style="width: 84%"></span>
+        </div>
+      </div>
+      <img class="alert" lang="en" src="img/alert-en.png" alt="">
+      <img class="alert" lang="zh" src="img/alert.png" alt="">
+    </div>
+  </div>
+
+  <div class="define">
+    <div class="wrap">
+      <span class="word">chivvy</span>
+      <span class="ipa">/ˈtʃɪvi/ · verb</span>
+      <span class="meaning"><span lang="en">to keep telling someone to do something until they do it.</span><span lang="zh">不停地催人去做某事，直到做完为止。</span></span>
+    </div>
+  </div>
+
+  <section class="block" id="features">
+    <div class="wrap">
+      <h2 style="max-width: 760px"><span lang="en">Built for the reminder you’d otherwise ignore.</span><span lang="zh">专治那些你本来会忽略的提醒。</span></h2>
+      <div class="cards">
+        <div class="card">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><rect x="3" y="7" width="18" height="15" rx="3" stroke="#86868B" stroke-width="1.8"/><rect x="9" y="4" width="16" height="11" rx="3" fill="#0B0C10" stroke="#FF8A1F" stroke-width="1.8"/></svg>
+          <h3><span lang="en">On top of everything</span><span lang="zh">压在一切之上</span></h3>
+          <p><span lang="en">The alert floats over every window and every Space, even a full‑screen app. The sound loops until you respond, and stops by itself after 45 seconds.</span><span lang="zh">弹窗浮在所有窗口和桌面空间之上，全屏应用里也看得到。铃声循环播放直到你回应，45 秒后自动停止。</span></p>
+        </div>
+        <div class="card">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="10.5" stroke="#86868B" stroke-width="1.8"/><path d="M14 8v6l4 2.5" stroke="#FF8A1F" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <h3><span lang="en">Snooze, but not forever</span><span lang="zh">能推迟，但不能一直推</span></h3>
+          <p><span lang="en">Push it back 5 or 10 minutes, three times at most. After that the only button left is “Got it”.</span><span lang="zh">可以推迟 5 或 10 分钟，最多 3 次。之后只剩下“知道了”一个按钮。</span></p>
+        </div>
+        <div class="card">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M5 8.5a9.5 9.5 0 1 1 0 11" stroke="#86868B" stroke-width="1.8" stroke-linecap="round"/><circle cx="22.5" cy="14" r="2.5" fill="#FF8A1F"/></svg>
+          <h3><span lang="en">Still there after sleep</span><span lang="zh">睡眠醒来照样提醒</span></h3>
+          <p><span lang="en">Missed a reminder while the Mac was asleep? It shows on wake if it’s under 30 minutes late. If Chivvy isn’t running, macOS delivers it as a notification.</span><span lang="zh">Mac 睡眠时错过的提醒，只要晚了不到 30 分钟，唤醒后会补弹。Chivvy 没在运行时，由系统通知兜底。</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap split">
+      <div class="copy">
+        <div class="eyebrow"><span lang="en">Daily reminders</span><span lang="zh">每日提醒</span></div>
+        <h2><span lang="en">Bedtime, water, stretching. Every habit in one place.</span><span lang="zh">睡觉、喝水、拉伸，所有习惯一处管理。</span></h2>
+        <p><span lang="en">Up to eight reminders, each on the days you choose: every day, weekdays, weekends or any mix. Turn them on and off, edit, or clear a batch at once.</span><span lang="zh">最多 8 条提醒，每条自选星期几：每天、工作日、周末或任意组合。可以单独开关、编辑，也能批量处理。</span></p>
+      </div>
+      <div class="shot">
+        <img lang="en" src="img/reminders-en.png" alt="The Daily reminders page listing four reminders">
+        <img lang="zh" src="img/reminders.png" alt="每日提醒页面，列出四条提醒">
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="voice">
+    <div class="wrap split">
+      <div class="shot">
+        <img lang="en" src="img/voice-en.png" alt="The voice confirm card for a weekday 08:30 reminder">
+        <img lang="zh" src="img/voice.png" alt="语音确认卡片：工作日 08:30 提醒喝水">
+      </div>
+      <div class="copy">
+        <div class="eyebrow"><span lang="en">Voice</span><span lang="zh">语音添加</span></div>
+        <h2><span lang="en">Press ⌃⌘R. Say it once.</span><span lang="zh">按 ⌃⌘R，说一句话就行。</span></h2>
+        <p><span lang="en">“十分钟后提醒我关火” (turn off the stove in ten minutes) starts a countdown. “工作日早上八点半提醒我喝水” (water at 8:30 on weekdays) becomes a daily reminder, after a quick look to confirm.</span><span lang="zh">说“十分钟后提醒我关火”，直接开始倒计时；说“工作日早上八点半提醒我喝水”，确认一下就成为每日提醒。</span></p>
+        <div class="checks">
+          <div><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 9.5l3 3 7-7" stroke="#FF8A1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span lang="en">Understands Mandarin today</span><span lang="zh">目前支持普通话</span></div>
+          <div><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 9.5l3 3 7-7" stroke="#FF8A1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span lang="en">Recognized on your Mac when the offline model is available</span><span lang="zh">有离线模型时在本机识别</span></div>
+          <div><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 9.5l3 3 7-7" stroke="#FF8A1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span lang="en">Change the shortcut to any ⌃ or ⌥ combination</span><span lang="zh">快捷键可改成任意 ⌃ 或 ⌥ 组合</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap split">
+      <div class="copy">
+        <div class="eyebrow"><span lang="en">Countdown</span><span lang="zh">倒计时</span></div>
+        <h2><span lang="en">A timer that lives in your menu bar.</span><span lang="zh">住在菜单栏里的计时器。</span></h2>
+        <p><span lang="en">One click on a preset, or type minutes and seconds. The time left shows in the menu bar and on the Dock icon. Space pauses, Return starts, Esc cancels.</span><span lang="zh">点一下预设，或输入分秒。剩余时间显示在菜单栏和 Dock 图标上。空格暂停，回车开始，Esc 取消。</span></p>
+        <p><span lang="en">Light and dark follow your system. English and Chinese, switched in Settings or from the menu bar.</span><span lang="zh">浅色 / 深色跟随系统；中英文界面，在设置或菜单栏里切换。</span></p>
+      </div>
+      <div class="shot">
+        <img lang="en" src="img/main-en.png" alt="The Chivvy main window: sidebar, countdown ring and preset buttons">
+        <img lang="zh" src="img/main.png" alt="Chivvy 主窗口：侧栏、倒计时圆环和预设按钮">
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="wrap">
+      <img class="icon" src="img/icon.png" alt="Chivvy app icon">
+      <h2><span lang="en">Let it chivvy you.</span><span lang="zh">让它来催你。</span></h2>
+      <p style="margin: 0; font-size: 18px; color: var(--muted)"><span lang="en">Version 3.0 · under 3 MB · no account</span><span lang="zh">版本 3.0 · 不到 3 MB · 无需注册</span></p>
+      <div class="buttons">
+        <a class="btn btn-primary" href="https://github.com/qingchejun/Chivvy/releases/download/v3.0/Chivvy-AppleSilicon-v3.0.dmg">
+          <svg width="16" height="18" viewBox="0 0 16 18" fill="none" aria-hidden="true"><path d="M8 1v11m0 0l-4.5-4.5M8 12l4.5-4.5M1.5 16.5h13" stroke="#1A0D00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span lang="en">Apple Silicon</span><span lang="zh">Apple 芯片</span>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/qingchejun/Chivvy/releases/download/v3.0/Chivvy-Universal-v3.0.dmg"><span lang="en">Universal (Intel too)</span><span lang="zh">通用版（含 Intel）</span></a>
+      </div>
+      <p class="note">
+        <span lang="en">Chivvy isn’t notarized yet. On first launch, open System Settings → Privacy &amp; Security and choose Open Anyway, or run <code>xattr -dr com.apple.quarantine /Applications/Chivvy.app</code>.</span>
+        <span lang="zh">Chivvy 尚未经过苹果公证。第一次打开如被拦截，请到 系统设置 → 隐私与安全性 点“仍要打开”，或在终端运行 <code>xattr -dr com.apple.quarantine /Applications/Chivvy.app</code>。</span>
+      </p>
+      <a href="https://github.com/qingchejun/Chivvy/releases" class="fine"><span lang="en">All releases ›</span><span lang="zh">所有版本 ›</span></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><span lang="en">© 2026 青澈君 · Free for personal and noncommercial use (PolyForm Noncommercial 1.0.0)</span><span lang="zh">© 2026 青澈君 · 个人与非商业使用免费（PolyForm Noncommercial 1.0.0）</span></span>
+    <div class="flinks">
+      <a href="https://github.com/qingchejun/Chivvy">GitHub</a>
+      <a href="https://github.com/qingchejun/Chivvy/blob/main/LICENSE"><span lang="en">License</span><span lang="zh">许可证</span></a>
+      <a href="https://github.com/qingchejun/Chivvy/issues"><span lang="en">Commercial licensing</span><span lang="zh">商业授权</span></a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  function apply(lang) {
+    root.setAttribute('data-lang', lang);
+    root.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('chivvy-lang'); } catch (e) {}
+  var hash = location.hash === '#zh' ? 'zh' : (location.hash === '#en' ? 'en' : null);
+  var browser = (navigator.language || '').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
+  apply(hash || saved || browser);
+  document.getElementById('lang-toggle').addEventListener('click', function () {
+    var next = root.getAttribute('data-lang') === 'zh' ? 'en' : 'zh';
+    apply(next);
+    try { localStorage.setItem('chivvy-lang', next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
